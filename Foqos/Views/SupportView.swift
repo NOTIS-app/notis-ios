@@ -155,7 +155,7 @@ struct SupportView: View {
 
       VStack(alignment: .leading, spacing: 18) {
         Text(
-          "For setup questions and common problems, start with the [Help Center](https://www.foqos.app/support.html). Follow along or share how Foqos fits into your day."
+          "For setup questions and common problems, start with the [Help Center](https://notisapp.nl/support.html). Follow along or share how Foqos fits into your day."
         )
         .font(.callout)
         .multilineTextAlignment(.leading)

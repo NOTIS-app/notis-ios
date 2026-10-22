@@ -1,9 +1,9 @@
 name: PR Check
 
+# Upstream Foqos check (lint, unit tests, Mac tests). Manual only, to save macOS minutes;
+# NOTIS builds run in testflight.yml.
 on:
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   lint-and-build:

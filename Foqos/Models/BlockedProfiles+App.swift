@@ -267,7 +267,7 @@ extension BlockedProfiles {
   }
 
   static func getProfileDeepLink(_ profile: BlockedProfiles) -> String {
-    return "https://foqos.app/profile/" + profile.id.uuidString
+    return "https://notisapp.nl/profile/" + profile.id.uuidString
   }
 
   static func getSnapshot(for profile: BlockedProfiles) -> SharedData.ProfileSnapshot {

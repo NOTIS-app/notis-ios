@@ -203,7 +203,7 @@ xcodebuild \
 [[ "$(plutil -extract CFBundleVersion raw "$APP_PATH/Contents/Info.plist")" == "$BUILD_NUMBER" ]] ||
   fail "Exported app build number does not match $BUILD_NUMBER."
 
-filter_info="$APP_PATH/Contents/Library/SystemExtensions/dev.ambitionsoftware.foqos.mac.filter.systemextension/Contents/Info.plist"
+filter_info="$APP_PATH/Contents/Library/SystemExtensions/nl.notisapp.ios.mac.filter.systemextension/Contents/Info.plist"
 [[ "$(plutil -extract CFBundleShortVersionString raw "$filter_info")" == "$VERSION" ]] ||
   fail "System extension marketing version does not match $VERSION."
 [[ "$(plutil -extract CFBundleVersion raw "$filter_info")" == "$BUILD_NUMBER" ]] ||

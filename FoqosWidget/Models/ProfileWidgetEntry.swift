@@ -36,7 +36,7 @@ struct ProfileWidgetEntry: TimelineEntry {
   var sessionStartTime: Date? { isSessionActive ? activeSession?.startTime : nil }
 
   var destination: URL {
-    if isSessionActive || hasOtherActiveProfile { return URL(string: "https://foqos.app")! }
+    if isSessionActive || hasOtherActiveProfile { return URL(string: "https://notisapp.nl")! }
     return deepLinkURL ?? URL(string: "foqos://")!
   }
 

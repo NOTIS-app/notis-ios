@@ -197,7 +197,7 @@ struct BlockedProfileDomainsFields: View {
         "Block the same selected domains on your Mac with the Foqos for Mac app.",
       isOn: $draft.enableMacSync,
       isDisabled: disabled,
-      learnMoreURL: URL(string: "https://www.foqos.app/mac.html")
+      learnMoreURL: URL(string: "https://notisapp.nl/mac.html")
     )
     .onChange(of: draft.enableMacSync) { _, newValue in
       if newValue {

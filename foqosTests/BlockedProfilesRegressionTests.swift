@@ -340,7 +340,7 @@ final class BlockedProfilesRegressionTests: ModelRegressionTestCase {
     let profile = configuredProfile()
     XCTAssertEqual(
       BlockedProfiles.getProfileDeepLink(profile),
-      "https://foqos.app/profile/52990B36-727A-40CA-9427-E26434984634")
+      "https://notisapp.nl/profile/52990B36-727A-40CA-9427-E26434984634")
     XCTAssertNil(profile.activeScheduleTimerActivity)
     XCTAssertTrue(profile.scheduleIsOutOfSync)
     profile.schedule?.days = []

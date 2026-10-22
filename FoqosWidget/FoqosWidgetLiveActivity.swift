@@ -152,7 +152,7 @@ struct FoqosWidgetLiveActivity: Widget {
       } minimal: {
         activityIcon(for: context.state, size: minimalLogoSize)
       }
-      .widgetURL(URL(string: "http://www.foqos.app"))
+      .widgetURL(URL(string: "https://notisapp.nl"))
       .keylineTint(context.state.themeColor)
     }
   }

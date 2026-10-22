@@ -3,7 +3,7 @@ import OSLog
 
 enum ActiveProfileSyncStore {
   private static let log = Logger(
-    subsystem: "dev.ambitionsoftware.foqos", category: "ActiveProfileSync")
+    subsystem: "nl.notisapp.ios", category: "ActiveProfileSync")
 
   static func publish(
     session: SharedData.SessionSnapshot?,

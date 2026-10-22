@@ -60,7 +60,7 @@ struct SettingsView: View {
         AppIconPicker()
 
         Section("Help & Troubleshooting") {
-          Link(destination: URL(string: "https://www.foqos.app/support.html")!) {
+          Link(destination: URL(string: "https://notisapp.nl/support.html")!) {
             HStack {
               VStack(alignment: .leading, spacing: 2) {
                 Text("Help Center")
@@ -75,7 +75,7 @@ struct SettingsView: View {
             }
           }
 
-          Link(destination: URL(string: "https://www.foqos.app/blocking-native-apps.html")!) {
+          Link(destination: URL(string: "https://notisapp.nl/blocking-native-apps.html")!) {
             HStack {
               Text("Block Safari & Settings")
                 .foregroundColor(.primary)

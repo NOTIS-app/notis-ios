@@ -5,7 +5,7 @@ import OSLog
 
 final class FilterDataProvider: NEFilterDataProvider {
   private let logger = Logger(
-    subsystem: "dev.ambitionsoftware.foqos.mac.filter",
+    subsystem: "nl.notisapp.ios.mac.filter",
     category: "filter"
   )
   private let stateLock = NSLock()

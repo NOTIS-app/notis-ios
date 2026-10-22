@@ -47,32 +47,31 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
   private func createCustomShieldConfiguration(for type: BlockedContentType, title: String)
     -> ShieldConfiguration
   {
-    // Get user's selected theme color
-    let brandColor = UIColor(ThemeManager.shared.themeColor)
-
-    // Get random fun message
-    let randomMessage = getFunBlockMessage(for: type, title: title)
+    // NOTIS locked state: ink background with mandarin accents (website/style.css).
+    let notisInk = UIColor(red: 0x2B / 255, green: 0x2A / 255, blue: 0x27 / 255, alpha: 1)
+    let notisPaper = UIColor(red: 0xF4 / 255, green: 0xF2 / 255, blue: 0xEC / 255, alpha: 1)
+    let notisMandarin = UIColor(red: 0xF9 / 255, green: 0x99 / 255, blue: 0x63 / 255, alpha: 1)
 
     // Emoji “icon” (rendered to an image so it works with ShieldConfiguration.icon)
-    let emojiIcon = makeEmojiIcon(randomMessage.emoji, size: 96)
+    let emojiIcon = makeEmojiIcon("🔒", size: 96)
 
     return ShieldConfiguration(
       backgroundBlurStyle: .dark,
-      backgroundColor: brandColor,
+      backgroundColor: notisInk,
       icon: emojiIcon,
       title: ShieldConfiguration.Label(
-        text: randomMessage.title,
-        color: .white
+        text: "Even niet",
+        color: notisPaper
       ),
       subtitle: ShieldConfiguration.Label(
-        text: randomMessage.subtitle,
-        color: UIColor.white.withAlphaComponent(0.88)
+        text: "\(title) staat op slot. Houd je iPhone bij je NOTIS-steen om te ontgrendelen.",
+        color: notisPaper.withAlphaComponent(0.85)
       ),
       primaryButtonLabel: ShieldConfiguration.Label(
-        text: randomMessage.buttonText,
-        color: .black
+        text: "Terug",
+        color: notisInk
       ),
-      primaryButtonBackgroundColor: .white,
+      primaryButtonBackgroundColor: notisMandarin,
       secondaryButtonLabel: nil
     )
   }
