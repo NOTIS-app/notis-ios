@@ -46,9 +46,23 @@ jobs:
             -scheme "$SCHEME" \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
             CODE_SIGNING_ALLOWED=NO \
             | tee build.log | grep -E "error:|warning: .*NOTIS|\*\* BUILD" || true
           grep -q "\*\* BUILD SUCCEEDED \*\*" build.log
+
+      # A simulator build you can open in the browser via appetize.io (see docs/NOTIS-TESTFLIGHT.md).
+      - name: Zip simulator app
+        run: |
+          cd "$RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator"
+          zip -qry "$GITHUB_WORKSPACE/NOTIS-simulator.zip" foqos.app
+
+      - name: Keep simulator app
+        uses: actions/upload-artifact@v4
+        with:
+          name: NOTIS-simulator
+          path: NOTIS-simulator.zip
+          retention-days: 14
 
       - name: Keep build log
         if: failure()

@@ -22,6 +22,10 @@ struct NotisHomeView: View {
   @State private var didLongPress = false
   @State private var errorMessage: String?
 
+  @AppStorage(NotisEmergencyUnlock.endsAtKey) private var emergencyEndsAt: Double = 0
+  @AppStorage(NotisEmergencyUnlock.remainingKey) private var emergencyRemaining: Int =
+    NotisEmergencyUnlock.maxPerSession
+
   private var stones: [BlockedProfiles] {
     profiles.filter(\.isNotisStone)
   }
@@ -31,13 +35,27 @@ struct NotisHomeView: View {
   }
 
   private var isAuthorized: Bool {
-    requestAuthorizer.isAuthorized
+    // Screen Time can't be authorized in the simulator; let the UI be explored there anyway.
+    requestAuthorizer.isAuthorized || NotisDevice.isSimulator
+  }
+
+  private var emergencyEndDate: Date {
+    Date(timeIntervalSince1970: emergencyEndsAt)
+  }
+
+  private var isEmergencyActive: Bool {
+    isLocked && emergencyEndDate > Date()
+  }
+
+  /// Dark ink only while apps are really blocked; an emergency unlock looks neutral, as on Android.
+  private var isDark: Bool {
+    isLocked && !isEmergencyActive
   }
 
   var body: some View {
     NavigationStack {
       ZStack {
-        (isLocked ? NotisTheme.ink : NotisTheme.paper).ignoresSafeArea()
+        (isDark ? NotisTheme.ink : NotisTheme.paper).ignoresSafeArea()
 
         VStack(spacing: 28) {
           Spacer()
@@ -54,12 +72,12 @@ struct NotisHomeView: View {
         }
         .padding(.horizontal, 24)
       }
-      .animation(.easeInOut(duration: 0.3), value: isLocked)
+      .animation(.easeInOut(duration: 0.3), value: isDark)
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
           Text("NOTIS")
             .font(.system(.title3, design: .rounded).weight(.bold))
-            .foregroundStyle(isLocked ? NotisTheme.paper : NotisTheme.ink)
+            .foregroundStyle(isDark ? NotisTheme.paper : NotisTheme.ink)
         }
         ToolbarItemGroup(placement: .topBarTrailing) {
           Button {
@@ -77,7 +95,7 @@ struct NotisHomeView: View {
           .accessibilityLabel("Instellingen")
         }
       }
-      .tint(isLocked ? NotisTheme.mandarin : NotisTheme.ink)
+      .tint(isDark ? NotisTheme.mandarin : NotisTheme.ink)
       .sheet(isPresented: $showMijnNotis) {
         MijnNotisView()
       }
@@ -89,12 +107,12 @@ struct NotisHomeView: View {
         isPresented: $showEmergencyConfirm,
         titleVisibility: .visible
       ) {
-        Button("Ontgrendel zonder steen", role: .destructive) {
-          strategyManager.emergencyUnblock(context: context)
-        }
+        Button("Ontgrendelen bevestigen", role: .destructive, action: startEmergencyUnlock)
         Button("Annuleer", role: .cancel) {}
       } message: {
-        Text("Je hebt er nog \(strategyManager.getRemainingEmergencyUnblocks()) over.")
+        Text(
+          "Je krijgt \(NotisEmergencyUnlock.durationInMinutes) minuten toegang tot je apps. Daarna gaat alles weer op slot. Nog \(emergencyRemaining) over deze sessie."
+        )
       }
       .alert(
         "Dat lukte niet",
@@ -117,7 +135,17 @@ struct NotisHomeView: View {
       }
     }
     .onAppear {
-      strategyManager.checkAndResetEmergencyUnblocks()
+      refresh()
+    }
+    .task(id: emergencyEndsAt) {
+      // When the emergency minutes are up the DeviceMonitor extension relocks; follow it here.
+      let remaining = emergencyEndDate.timeIntervalSinceNow
+      guard emergencyEndsAt > 0 else { return }
+      if remaining > 0 {
+        try? await Task.sleep(for: .seconds(remaining + 1))
+        guard !Task.isCancelled else { return }
+      }
+      NotisEmergencyUnlock.clear()
       refresh()
     }
   }
@@ -126,13 +154,13 @@ struct NotisHomeView: View {
     Button(action: stoneTapped) {
       ZStack {
         NotisStoneShape()
-          .fill(isLocked ? NotisTheme.mandarin : NotisTheme.card)
-          .shadow(color: .black.opacity(isLocked ? 0.35 : 0.12), radius: 18, y: 10)
+          .fill(isDark ? NotisTheme.mandarin : NotisTheme.card)
+          .shadow(color: .black.opacity(isDark ? 0.35 : 0.12), radius: 18, y: 10)
 
         NotisStoneShape()
-          .strokeBorder(isLocked ? NotisTheme.paper.opacity(0.4) : NotisTheme.mandarin, lineWidth: 3)
+          .strokeBorder(isDark ? NotisTheme.paper.opacity(0.4) : NotisTheme.mandarin, lineWidth: 3)
 
-        Image(systemName: isLocked ? "lock.fill" : "wave.3.right")
+        Image(systemName: isEmergencyActive ? "lock.open" : isLocked ? "lock.fill" : "wave.3.right")
           .font(.system(size: 48, weight: .semibold))
           .foregroundStyle(NotisTheme.ink)
           .offset(y: 12)
@@ -143,8 +171,7 @@ struct NotisHomeView: View {
     .buttonStyle(.plain)
     .simultaneousGesture(
       LongPressGesture(minimumDuration: 1.2).onEnded { _ in
-        guard isLocked, FeatureFlags.emergencyUnlock,
-          strategyManager.getRemainingEmergencyUnblocks() > 0
+        guard isLocked, !isEmergencyActive, FeatureFlags.emergencyUnlock, emergencyRemaining > 0
         else { return }
         // The button still fires on release; this keeps that tap from opening the NFC sheet.
         didLongPress = true
@@ -157,7 +184,18 @@ struct NotisHomeView: View {
   @ViewBuilder
   private var statusText: some View {
     VStack(spacing: 8) {
-      if isLocked, let session = strategyManager.activeSession {
+      if isEmergencyActive {
+        Text("Terug over")
+          .font(.title3.weight(.semibold))
+          .foregroundStyle(NotisTheme.ink)
+        Text(emergencyEndDate, style: .timer)
+          .font(.system(.title, design: .rounded).monospacedDigit())
+          .foregroundStyle(NotisTheme.mandarin)
+        Button("Blokkeren hervatten", action: resumeBlocking)
+          .buttonStyle(.bordered)
+          .tint(NotisTheme.ink)
+          .padding(.top, 8)
+      } else if isLocked, let session = strategyManager.activeSession {
         Text("Vergrendeld met \(session.blockedProfile.name)")
           .font(.title3.weight(.semibold))
           .foregroundStyle(NotisTheme.paper)
@@ -229,6 +267,26 @@ struct NotisHomeView: View {
 
     // The scanned stone picks its own app list; `anyStone` only routes to the NOTIS strategy.
     strategyManager.toggleBlocking(context: context, activeProfile: anyStone)
+  }
+
+  private func startEmergencyUnlock() {
+    guard let session = strategyManager.activeSession else { return }
+    do {
+      try NotisEmergencyUnlock.start(session: session, context: context)
+    } catch {
+      errorMessage = String(localized: "Noodontgrendeling lukte niet: \(error.localizedDescription)")
+    }
+    // The extension starts the pause a moment later; reload so the session reflects it.
+    Task {
+      try? await Task.sleep(for: .seconds(2))
+      refresh()
+    }
+  }
+
+  private func resumeBlocking() {
+    guard let session = strategyManager.activeSession else { return }
+    NotisEmergencyUnlock.resume(session: session, context: context)
+    refresh()
   }
 
   private func refresh() {

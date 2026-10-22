@@ -20,6 +20,14 @@ class NFCScannerUtil: NSObject {
   }
 
   func scan(alertMessage: String) {
+    #if targetEnvironment(simulator)
+      // No NFC in the simulator: act as if a stone was scanned, so the screens can be tried out.
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+        self.onTagScanned?(NFCResult(id: "51A1A7020000", url: nil, DateScanned: Date()))
+      }
+      return
+    #endif
+
     guard NFCReaderSession.readingAvailable else {
       self.onError?("NFC scanning not available on this device")
       return

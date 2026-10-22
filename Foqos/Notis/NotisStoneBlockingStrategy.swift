@@ -47,6 +47,7 @@ class NotisStoneBlockingStrategy: BlockingStrategy {
         forceStart: false
       )
       try? context.save()
+      NotisEmergencyUnlock.resetForNewSession()
       self.onSessionCreation?(.started(activeSession))
     }
 
@@ -64,6 +65,10 @@ class NotisStoneBlockingStrategy: BlockingStrategy {
         self.onErrorMessage?(String(localized: "Deze steen hoort niet bij jouw NOTIS."))
         return
       }
+
+      // Scanning during an emergency unlock ends the whole session, pause timer included.
+      DeviceActivityCenterUtil.removePauseTimerActivity(for: session.blockedProfile)
+      NotisEmergencyUnlock.clear()
 
       session.endSession()
       try? context.save()

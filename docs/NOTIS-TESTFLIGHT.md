@@ -144,17 +144,40 @@ beta-review.
   apps gaan op slot. Elke gekoppelde steen ontgrendelt weer.
 - *Mijn NOTIS*: stenen koppelen, hernoemen en verwijderen. Per steen kies je de apps die bruikbaar
   blijven, en je kunt de selectie van een andere steen kopiëren.
-- Noodontgrendeling: houd de steen lang ingedrukt (3× per 4 weken).
+- Noodontgrendeling zoals op Android: houd de steen lang ingedrukt en je krijgt 5 minuten
+  toegang, 2× per sessie. Daarna gaat alles vanzelf weer op slot, ook als de app dicht is.
+  Met *Blokkeren hervatten* stop je eerder.
 - Stenen worden herkend aan hun chip-ID, net als op Android, dus dezelfde steen werkt op beide.
 
 ### Bewust nog niet in deze versie
 
-- **Scannen met de app dicht.** iOS kan dat alleen als de steen een web-link bevat en
-  `notisapp.nl` een *apple-app-site-association*-bestand heeft. Dat kan zodra het domein vastligt.
+- **Scannen zonder eerst op de knop te tikken.** iOS laat een app nooit stil op de achtergrond
+  NFC lezen, zoals Android wel doet. Er zijn twee manieren die er het dichtst bij komen:
+  1. *Web-link op de steen.* Houd je iPhone (ontgrendeld) bij de steen, dan verschijnt een melding
+     "Open in NOTIS". Eén tik daarop en de app wisselt het slot. Hiervoor moet de steen een link
+     als `https://notisapp.nl/s/...` bevatten en moet `notisapp.nl` live staan met een
+     *apple-app-site-association*-bestand.
+  2. *Opdrachten-automatisering.* In de app Opdrachten (Shortcuts) kun je per steen instellen
+     "bij scannen van deze NFC-tag → NOTIS wisselen". Dat gaat helemaal zonder tikken, maar elke
+     gebruiker moet het zelf eenmalig instellen.
 - **Ouders en docenten.** Die staan uit in `Foqos/Notis/FeatureFlags.swift`
   (`schoolLive` en `parentControls`). Op iOS werkt het kiezen van apps anders dan op Android: Apple
   geeft geen app-namen, alleen versleutelde tokens per toestel. Een ouder- of klaslijst moet
   daarom op het toestel zelf gekozen worden. Dat bouwen we als aparte stap.
+
+## De app bekijken op Windows (zonder iPhone)
+
+Een echte iOS-emulator voor Windows bestaat niet: Apple's simulator draait alleen op een Mac.
+Wat wel kan, is de simulator in je browser via **appetize.io**:
+
+1. Open op GitHub de laatste groene **check**-run (*Actions*) en download onderaan
+   `NOTIS-simulator`. Daarin zit `NOTIS-simulator.zip`.
+2. Maak een gratis account op <https://appetize.io>, kies *Upload* en upload de zip.
+3. Je krijgt een iPhone in je browser met NOTIS erop.
+
+In de simulator is er geen NFC en geen Schermtijd. Tikken op de steen doet daarom alsof er een
+steen gescand is, en apps gaan niet echt op slot. Gebruik dit om schermen en teksten te bekijken.
+Of het blokkeren echt werkt, test je met TestFlight op een iPhone.
 
 ## Features aan- en uitzetten
 

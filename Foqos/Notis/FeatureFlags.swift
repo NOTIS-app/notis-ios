@@ -23,3 +23,13 @@ enum FeatureFlags {
   /// TestFlight test.
   static let parentControls = false
 }
+
+enum NotisDevice {
+  static var isSimulator: Bool {
+    #if targetEnvironment(simulator)
+      return true
+    #else
+      return false
+    #endif
+  }
+}

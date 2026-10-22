@@ -36,19 +36,17 @@ struct NotisSettingsView: View {
 
         if FeatureFlags.emergencyUnlock {
           Section {
-            LabeledContent(
-              "Noodontgrendelingen over",
-              value: "\(strategyManager.getRemainingEmergencyUnblocks())"
-            )
-            if let resetDate = strategyManager.getNextResetDate() {
-              LabeledContent("Weer aangevuld op") {
-                Text(resetDate, style: .date)
-              }
+            LabeledContent("Per sessie", value: "\(NotisEmergencyUnlock.maxPerSession)×")
+            LabeledContent("Duur", value: "\(NotisEmergencyUnlock.durationInMinutes) min")
+            if strategyManager.isBlocking {
+              LabeledContent("Nog over deze sessie", value: "\(NotisEmergencyUnlock.remaining)")
             }
           } header: {
             Text("Noodontgrendeling")
           } footer: {
-            Text("Houd de steen op het beginscherm lang ingedrukt om zonder steen te ontgrendelen.")
+            Text(
+              "Houd tijdens een sessie de steen op het beginscherm lang ingedrukt. Je krijgt dan even toegang tot je apps; daarna gaat alles vanzelf weer op slot."
+            )
           }
         }
 
