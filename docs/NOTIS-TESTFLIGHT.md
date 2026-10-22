@@ -151,15 +151,9 @@ beta-review.
 
 ### Bewust nog niet in deze versie
 
-- **Scannen zonder eerst op de knop te tikken.** iOS laat een app nooit stil op de achtergrond
-  NFC lezen, zoals Android wel doet. Er zijn twee manieren die er het dichtst bij komen:
-  1. *Web-link op de steen.* Houd je iPhone (ontgrendeld) bij de steen, dan verschijnt een melding
-     "Open in NOTIS". Eén tik daarop en de app wisselt het slot. Hiervoor moet de steen een link
-     als `https://notisapp.nl/s/...` bevatten en moet `notisapp.nl` live staan met een
-     *apple-app-site-association*-bestand.
-  2. *Opdrachten-automatisering.* In de app Opdrachten (Shortcuts) kun je per steen instellen
-     "bij scannen van deze NFC-tag → NOTIS wisselen". Dat gaat helemaal zonder tikken, maar elke
-     gebruiker moet het zelf eenmalig instellen.
+- **Scannen zonder eerst te tikken.** Bewust niet: op iOS tik je eerst op de steen in de app
+  en houd je dan je iPhone bij de steen. iOS laat apps niet stil op de achtergrond NFC lezen
+  zoals Android.
 - **Ouders en docenten.** Die staan uit in `Foqos/Notis/FeatureFlags.swift`
   (`schoolLive` en `parentControls`). Op iOS werkt het kiezen van apps anders dan op Android: Apple
   geeft geen app-namen, alleen versleutelde tokens per toestel. Een ouder- of klaslijst moet
