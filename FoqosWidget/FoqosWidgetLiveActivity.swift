@@ -18,8 +18,9 @@ struct FoqosWidgetAttributes: ActivityAttributes {
     var themeColorName: String?
     var appIconName: String?
 
+    // NOTIS: always the brand mandarin (website/style.css), whatever Foqos theme was saved.
     var themeColor: Color {
-      ThemeManager.color(named: themeColorName)
+      Color(red: 0xF9 / 255, green: 0x99 / 255, blue: 0x63 / 255)
     }
 
     var appIcon: AppIconOption {
@@ -80,7 +81,7 @@ struct FoqosWidgetLiveActivity: Widget {
         // Left side - App info
         VStack(alignment: .leading, spacing: 8) {
           HStack(spacing: 4) {
-            Text("Foqos")
+            Text("NOTIS")
               .font(.headline)
               .fontWeight(.bold)
               .foregroundColor(.primary)
@@ -174,7 +175,7 @@ struct FoqosWidgetLiveActivity: Widget {
       activityIcon(for: state, size: expandedLogoSize)
 
       VStack(alignment: .leading, spacing: 1) {
-        Text("Foqos")
+        Text("NOTIS")
           .font(.system(size: 18, weight: .bold, design: .rounded))
           .foregroundColor(.primary)
           .lineLimit(1)

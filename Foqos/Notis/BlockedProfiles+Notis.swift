@@ -34,6 +34,7 @@ extension BlockedProfiles {
       selection: selection,
       blockingStrategyId: NotisStoneBlockingStrategy.id,
       askForStartSettings: false,
+      enableLiveActivity: NotisNotifications.isEnabled,
       enableAllowMode: FeatureFlags.allowList,
       physicalUnblockItems: [PhysicalUnblockItem(name: name, type: .nfc, codeValue: tag)],
       enableEmergencyUnblock: FeatureFlags.emergencyUnlock

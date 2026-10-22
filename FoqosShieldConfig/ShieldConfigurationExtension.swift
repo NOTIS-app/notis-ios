@@ -52,23 +52,23 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
     let notisPaper = UIColor(red: 0xF4 / 255, green: 0xF2 / 255, blue: 0xEC / 255, alpha: 1)
     let notisMandarin = UIColor(red: 0xF9 / 255, green: 0x99 / 255, blue: 0x63 / 255, alpha: 1)
 
-    // Emoji “icon” (rendered to an image so it works with ShieldConfiguration.icon)
-    let emojiIcon = makeEmojiIcon("🔒", size: 96)
+    // The NOTIS stone, like the Android block overlay.
+    let icon = UIImage(named: "notis-shield-icon") ?? makeEmojiIcon("🔒", size: 96)
 
     return ShieldConfiguration(
       backgroundBlurStyle: .dark,
       backgroundColor: notisInk,
-      icon: emojiIcon,
+      icon: icon,
       title: ShieldConfiguration.Label(
-        text: "Even niet",
+        text: "Blijf gefocust!",
         color: notisPaper
       ),
       subtitle: ShieldConfiguration.Label(
-        text: "\(title) staat op slot. Houd je iPhone bij je NOTIS-steen om te ontgrendelen.",
+        text: "\(title) staat nu op slot.\nTik met je telefoon op je NOTIS om hem weer vrij te geven.",
         color: notisPaper.withAlphaComponent(0.85)
       ),
       primaryButtonLabel: ShieldConfiguration.Label(
-        text: "Terug",
+        text: "Oké",
         color: notisInk
       ),
       primaryButtonBackgroundColor: notisMandarin,

@@ -39,6 +39,7 @@ struct foqosApp: App {
   @StateObject private var alertsManager = AlertsManager.shared
 
   init() {
+    NotisFont.register()
     TimersUtil.registerBackgroundTasks()
 
     let asyncDependency: @Sendable () async -> (ModelContainer) = {
@@ -56,7 +57,7 @@ struct foqosApp: App {
     WindowGroup {
       Group {
         if FeatureFlags.notisHome {
-          NotisHomeView()
+          NotisRootView()
         } else {
           HomeView()
         }

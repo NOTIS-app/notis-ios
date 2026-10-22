@@ -12,6 +12,12 @@ class NFCScannerUtil: NSObject {
   var onTagScanned: ((NFCResult) -> Void)?
   var onError: ((String) -> Void)?
 
+  /// Shown in the iPhone NFC sheet as it closes after a read; set it from `onTagScanned` (or
+  /// before scanning) to confirm what happened, like Android's toasts.
+  var resultMessage: String?
+  /// Closes the NFC sheet with this error instead; set it from `onTagScanned`.
+  var resultErrorMessage: String?
+
   private var nfcSession: NFCReaderSession?
   private var urlToWrite: String?
 
@@ -20,10 +26,15 @@ class NFCScannerUtil: NSObject {
   }
 
   func scan(alertMessage: String) {
+    resultErrorMessage = nil
+
     #if targetEnvironment(simulator)
       // No NFC in the simulator: act as if a stone was scanned, so the screens can be tried out.
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
         self.onTagScanned?(NFCResult(id: "51A1A7020000", url: nil, DateScanned: Date()))
+        if let error = self.resultErrorMessage {
+          self.onError?(error)
+        }
       }
       return
     #endif
@@ -196,6 +207,13 @@ extension NFCScannerUtil: NFCTagReaderSessionDelegate {
 
     DispatchQueue.main.async {
       self.onTagScanned?(result)
+      if let error = self.resultErrorMessage {
+        session.invalidate(errorMessage: error)
+        return
+      }
+      if let message = self.resultMessage {
+        session.alertMessage = message
+      }
       session.invalidate()
     }
   }

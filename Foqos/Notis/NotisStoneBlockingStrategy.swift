@@ -31,12 +31,14 @@ class NotisStoneBlockingStrategy: BlockingStrategy {
     profile: BlockedProfiles,
     forceStart: Bool?
   ) -> (any View)? {
+    prepareScanner()
     nfcScanner.onTagScanned = { tag in
       // The stone decides which app list applies, not the profile the caller passed in.
       guard let stone = BlockedProfiles.findNotisStone(withTag: tag.id, in: context) else {
-        self.onErrorMessage?(String(localized: "Deze steen is nog niet gekoppeld. Koppel hem in Mijn NOTIS."))
+        self.nfcScanner.resultErrorMessage = String(localized: "Deze steen is niet gekoppeld")
         return
       }
+      self.nfcScanner.resultMessage = String(localized: "Apps op slot · met \(stone.name)")
 
       self.appBlocker.activateRestrictions(for: BlockedProfiles.getSnapshot(for: stone))
 
@@ -51,7 +53,7 @@ class NotisStoneBlockingStrategy: BlockingStrategy {
       self.onSessionCreation?(.started(activeSession))
     }
 
-    nfcScanner.scan(alertMessage: String(localized: "Houd je iPhone bij je NOTIS-steen"))
+    nfcScanner.scan(alertMessage: String(localized: "Houd de bovenkant van je iPhone tegen je NOTIS"))
 
     return nil
   }
@@ -60,11 +62,13 @@ class NotisStoneBlockingStrategy: BlockingStrategy {
     context: ModelContext,
     session: BlockedProfileSession
   ) -> (any View)? {
+    prepareScanner()
     nfcScanner.onTagScanned = { tag in
-      guard BlockedProfiles.findNotisStone(withTag: tag.id, in: context) != nil else {
-        self.onErrorMessage?(String(localized: "Deze steen hoort niet bij jouw NOTIS."))
+      guard let stone = BlockedProfiles.findNotisStone(withTag: tag.id, in: context) else {
+        self.nfcScanner.resultErrorMessage = String(localized: "Deze steen is niet gekoppeld")
         return
       }
+      self.nfcScanner.resultMessage = String(localized: "Apps weer vrij · met \(stone.name)")
 
       // Scanning during an emergency unlock ends the whole session, pause timer included.
       DeviceActivityCenterUtil.removePauseTimerActivity(for: session.blockedProfile)
@@ -77,8 +81,16 @@ class NotisStoneBlockingStrategy: BlockingStrategy {
       self.onSessionCreation?(.ended(session.blockedProfile))
     }
 
-    nfcScanner.scan(alertMessage: String(localized: "Houd je iPhone bij een NOTIS-steen om te ontgrendelen"))
+    nfcScanner.scan(alertMessage: String(localized: "Houd de bovenkant van je iPhone tegen je NOTIS"))
 
     return nil
+  }
+
+  /// Errors from the NFC sheet itself (no NFC, timeout) reach the home screen's alert.
+  private func prepareScanner() {
+    nfcScanner.resultMessage = nil
+    nfcScanner.onError = { message in
+      self.onErrorMessage?(message)
+    }
   }
 }

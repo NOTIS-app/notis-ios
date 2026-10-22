@@ -80,7 +80,7 @@ class LiveActivityManager: ObservableObject {
 
     // Create and start the activity
     let profileName = session.blockedProfile.name
-    let message = FocusMessages.getRandomMessage()
+    let message = FeatureFlags.notisHome ? String(localized: "Apps op slot") : FocusMessages.getRandomMessage()
     let attributes = FoqosWidgetAttributes(name: profileName, message: message)
     let contentState = makeContentState(for: session)
     let activityContent = ActivityContent(
