@@ -312,9 +312,9 @@ struct BlockedProfilePhysicalUnblockSelector: View {
 #Preview {
   @Previewable @State var physicalUnblockItems: [PhysicalUnblockItem] = [
     PhysicalUnblockItem(name: "Tag 1", type: .nfc, codeValue: "04AABBCC11223344"),
-    PhysicalUnblockItem(name: "Tag 2", type: .nfc, codeValue: "https://foqos.app/profile/tag-2"),
+    PhysicalUnblockItem(name: "Tag 2", type: .nfc, codeValue: "https://notisapp.nl/profile/tag-2"),
     PhysicalUnblockItem(
-      name: "Office QR", type: .qrCode, codeValue: "https://foqos.app/profile/office"),
+      name: "Office QR", type: .qrCode, codeValue: "https://notisapp.nl/profile/office"),
   ]
 
   NavigationStack {

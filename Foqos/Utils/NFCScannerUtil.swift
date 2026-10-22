@@ -16,6 +16,10 @@ class NFCScannerUtil: NSObject {
   private var urlToWrite: String?
 
   func scan(profileName: String) {
+    scan(alertMessage: "Hold your iPhone near an NFC tag to trigger " + profileName)
+  }
+
+  func scan(alertMessage: String) {
     guard NFCReaderSession.readingAvailable else {
       self.onError?("NFC scanning not available on this device")
       return
@@ -26,7 +30,7 @@ class NFCScannerUtil: NSObject {
       delegate: self,
       queue: nil
     )
-    nfcSession?.alertMessage = "Hold your iPhone near an NFC tag to trigger " + profileName
+    nfcSession?.alertMessage = alertMessage
     nfcSession?.begin()
   }
 
@@ -59,6 +63,14 @@ extension NFCScannerUtil: NFCTagReaderSessionDelegate {
   }
 
   func tagReaderSession(_ session: NFCTagReaderSession, didInvalidateWithError error: Error) {
+    // Closing the sheet ourselves after a read, or the user cancelling, is not an error.
+    if let readerError = error as? NFCReaderError,
+      readerError.code == .readerSessionInvalidationErrorUserCanceled
+        || readerError.code == .readerSessionInvalidationErrorFirstNDEFTagRead
+    {
+      return
+    }
+
     DispatchQueue.main.async {
       self.onError?(error.localizedDescription)
     }
@@ -91,7 +103,7 @@ extension NFCScannerUtil: NFCTagReaderSessionDelegate {
       (payload: NFCNDEFPayload) -> URLComponents? in
       if let url = payload.wellKnownTypeURIPayload() {
         let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-        if components?.host == "foqos.app" && components?.scheme == "https" {
+        if components?.host == "notisapp.nl" && components?.scheme == "https" {
           return components
         }
       }

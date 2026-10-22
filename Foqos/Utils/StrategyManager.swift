@@ -18,6 +18,7 @@ class StrategyManager: ObservableObject {
     QRTimerBlockingStrategy(),
     QRPauseTimerBlockingStrategy(),
     ShortcutTimerBlockingStrategy(),
+    NotisStoneBlockingStrategy(),
   ]
 
   @Published var elapsedTime: TimeInterval = 0

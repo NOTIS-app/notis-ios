@@ -65,7 +65,7 @@ enum WidgetDataStore {
     }
 
     let path = configuration.useProfileURL == true ? "profile" : "navigate"
-    let url = profile.flatMap { URL(string: "https://foqos.app/\(path)/\($0.id.uuidString)") }
+    let url = profile.flatMap { URL(string: "https://notisapp.nl/\(path)/\($0.id.uuidString)") }
     return ProfileWidgetEntry(
       date: date,
       selectedProfileId: profile?.id.uuidString,

@@ -11,7 +11,7 @@ final class FilterExtensionBundleLocatorTests: XCTestCase {
       try? fileManager.removeItem(at: applicationBundleURL)
     }
 
-    let extensionIdentifier = "dev.ambitionsoftware.foqos.mac.filter"
+    let extensionIdentifier = "nl.notisapp.ios.mac.filter"
     let extensionContentsURL =
       applicationBundleURL
       .appendingPathComponent("Contents/Library/SystemExtensions", isDirectory: true)

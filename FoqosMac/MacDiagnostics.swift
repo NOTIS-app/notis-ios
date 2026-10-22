@@ -35,8 +35,8 @@ final class MacDiagnostics: @unchecked Sendable {
   private let maxBytes: Int
   private let retention: TimeInterval
   private let now: () -> Date
-  private let queue = DispatchQueue(label: "dev.ambitionsoftware.foqos.diagnostics", qos: .utility)
-  private let logger = Logger(subsystem: "dev.ambitionsoftware.foqos.mac", category: "diagnostics")
+  private let queue = DispatchQueue(label: "nl.notisapp.ios.diagnostics", qos: .utility)
+  private let logger = Logger(subsystem: "nl.notisapp.ios.mac", category: "diagnostics")
   private let launchID = UUID().uuidString
   private var sequence = 0
   private var currentFile: URL?

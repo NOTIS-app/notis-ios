@@ -54,7 +54,13 @@ struct foqosApp: App {
 
   var body: some Scene {
     WindowGroup {
-      HomeView()
+      Group {
+        if FeatureFlags.notisHome {
+          NotisHomeView()
+        } else {
+          HomeView()
+        }
+      }
         .onChange(of: themeManager.selectedColorName) { _, _ in
           updateLiveActivityAppearance()
         }
