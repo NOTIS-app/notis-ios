@@ -15,6 +15,15 @@ struct NotisOnboardingView: View {
     case welcome, permissions, apps, pairing
   }
 
+  /// Without `onboardingApps` and `onboardingPairLater`, onboarding ends on the permissions page.
+  private static let pages: [Page] = Page.allCases.filter { page in
+    switch page {
+    case .apps: return FeatureFlags.onboardingApps
+    case .pairing: return FeatureFlags.onboardingPairing || FeatureFlags.onboardingPairLater
+    default: return true
+    }
+  }
+
   @State private var page: Page = .welcome
   @State private var selection = FamilyActivitySelection(includeEntireCategory: FeatureFlags.allowList)
   @State private var showAppPicker = false
@@ -47,7 +56,7 @@ struct NotisOnboardingView: View {
       .padding(.horizontal, 32)
 
       HStack(spacing: 8) {
-        ForEach(Page.allCases, id: \.self) { item in
+        ForEach(Self.pages, id: \.self) { item in
           Circle()
             .fill(item == page ? NotisBrand.mandarinDark : NotisBrand.inkSoft.opacity(0.2))
             .frame(width: 8, height: 8)
@@ -75,6 +84,15 @@ struct NotisOnboardingView: View {
 
   private func go(to next: Page) {
     withAnimation(.easeInOut(duration: 0.35)) { page = next }
+  }
+
+  /// The next shown page; after the last one, onboarding is done.
+  private func goNext() {
+    guard let index = Self.pages.firstIndex(of: page), index + 1 < Self.pages.count else {
+      onComplete()
+      return
+    }
+    go(to: Self.pages[index + 1])
   }
 
   // MARK: - Welcome
@@ -106,7 +124,7 @@ struct NotisOnboardingView: View {
           .font(.satoshi(17))
           .lineSpacing(4)
           .foregroundStyle(NotisBrand.inkSoft)
-        Button("Beginnen") { go(to: .permissions) }
+        Button("Beginnen", action: goNext)
           .buttonStyle(NotisPrimaryButtonStyle())
           .padding(.top, 12)
       }
@@ -169,14 +187,14 @@ struct NotisOnboardingView: View {
 
       Button(isAuthorized ? "Doorgaan" : "Toestemmingen instellen") {
         if isAuthorized {
-          go(to: .apps)
+          goNext()
         } else {
           requestAuthorizer.requestAuthorization()
         }
       }
       .buttonStyle(NotisPrimaryButtonStyle())
 
-      skipButton("Later instellen") { go(to: .apps) }
+      skipButton("Later instellen") { goNext() }
         .padding(.bottom, 64)
     }
   }
@@ -233,13 +251,13 @@ struct NotisOnboardingView: View {
 
       Button(appCount == 1 ? "Doorgaan · 1 app" : "Doorgaan · \(appCount) apps") {
         BlockedProfiles.saveOnboardingApps(selection)
-        go(to: .pairing)
+        goNext()
       }
         .buttonStyle(NotisPrimaryButtonStyle())
 
       skipButton("Later kiezen") {
         selection = FamilyActivitySelection(includeEntireCategory: FeatureFlags.allowList)
-        go(to: .pairing)
+        goNext()
       }
       .padding(.bottom, 64)
     }

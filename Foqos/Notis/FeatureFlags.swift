@@ -15,9 +15,15 @@ enum FeatureFlags {
   /// Long-press the stone button to unlock without a stone (limited count).
   static let emergencyUnlock = true
 
-  /// Onboarding ends by pairing the first stone. Off: the last page only says to pair it later
-  /// in "Mijn NOTIS".
+  /// Onboarding ends by pairing the first stone. Off: stones are paired in "Mijn NOTIS" (see
+  /// `onboardingPairLater`).
   static let onboardingPairing = false
+
+  /// Onboarding step "Welke apps mag je gebruiken?". Off: apps are chosen per stone in "Mijn NOTIS".
+  static let onboardingApps = false
+
+  /// Last onboarding page "Koppel je NOTIS straks" (only without `onboardingPairing`).
+  static let onboardingPairLater = false
 
   /// Lock from the app: pick one of your stones on the home screen instead of scanning it.
   /// Unlocking still takes a stone.
