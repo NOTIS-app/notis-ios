@@ -15,6 +15,14 @@ enum FeatureFlags {
   /// Long-press the stone button to unlock without a stone (limited count).
   static let emergencyUnlock = true
 
+  /// Onboarding ends by pairing the first stone. Off: the last page only says to pair it later
+  /// in "Mijn NOTIS".
+  static let onboardingPairing = false
+
+  /// Lock from the app: pick one of your stones on the home screen instead of scanning it.
+  /// Unlocking still takes a stone.
+  static let lockFromApp = true
+
   /// School live: students join a class and a teacher's class stone locks the whole class.
   /// Off for the first TestFlight test.
   static let schoolLive = false

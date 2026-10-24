@@ -3,10 +3,8 @@ import SwiftData
 import SwiftUI
 
 /// "Mijn NOTIS", like Android's `NfcTagsScreen` with profiles hidden: one card per stone (tap to
-/// change its apps, ⋮ to rename or remove), a big pair button and at most five stones.
+/// change its apps, ⋮ to rename or remove) and a big pair button, for as many stones as you like.
 struct MijnNotisView: View {
-  static let maxStones = 5
-
   @Environment(\.modelContext) private var context
 
   @EnvironmentObject private var strategyManager: StrategyManager
@@ -71,7 +69,7 @@ struct MijnNotisView: View {
             )
           }
 
-          if !isPairingSuccess && stones.count < Self.maxStones {
+          if !isPairingSuccess {
             Button(action: startPairing) {
               Label("Nieuwe NOTIS koppelen", systemImage: "plus")
             }
@@ -203,8 +201,11 @@ struct MijnNotisView: View {
 
   private func createStone(tag: String, name: String, copyFrom: BlockedProfiles?) -> BlockedProfiles? {
     do {
+      // The first stone takes the apps chosen during onboarding, as on Android.
+      let onboardingApps = stones.isEmpty ? BlockedProfiles.takeOnboardingApps() : nil
       let selection =
         copyFrom?.selectedActivity
+        ?? onboardingApps
         ?? FamilyActivitySelection(includeEntireCategory: FeatureFlags.allowList)
       return try BlockedProfiles.createNotisStone(in: context, name: name, tag: tag, selection: selection)
     } catch {
@@ -351,20 +352,7 @@ private struct StoneCard: View {
   }
 
   private var subtitle: String {
-    if isActive { return String(localized: "Nu op slot") }
-    let count = FamilyActivityUtil.countSelectedActivities(stone.selectedActivity, allowMode: stone.enableAllowMode)
-    if stone.enableAllowMode {
-      switch count {
-      case 0: return String(localized: "Alles geblokkeerd")
-      case 1: return String(localized: "1 app toegestaan")
-      default: return String(localized: "\(count) apps toegestaan")
-      }
-    }
-    switch count {
-    case 0: return String(localized: "Nog geen apps · tik om te kiezen")
-    case 1: return String(localized: "1 app")
-    default: return String(localized: "\(count) apps")
-    }
+    isActive ? String(localized: "Nu op slot") : stone.notisAppsSummary
   }
 }
 

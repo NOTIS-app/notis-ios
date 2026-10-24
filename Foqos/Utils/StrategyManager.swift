@@ -110,6 +110,25 @@ class StrategyManager: ObservableObject {
     }
   }
 
+  /// NOTIS: lock with a stone chosen in the app, without scanning it.
+  func startNotisStoneWithoutScan(context: ModelContext, stone: BlockedProfiles) {
+    guard !isBlocking,
+      let strategy = getStrategy(id: NotisStoneBlockingStrategy.id, context: context)
+        as? NotisStoneBlockingStrategy
+    else { return }
+    strategy.startWithoutScan(context: context, stone: stone)
+  }
+
+  /// NOTIS: cancel a lock within its grace period, without scanning a stone.
+  func cancelNotisSessionInGracePeriod(context: ModelContext) {
+    guard let session = activeSession,
+      NotisGracePeriod.endDate(forSessionStartedAt: session.startTime) > Date(),
+      let strategy = getStrategy(id: NotisStoneBlockingStrategy.id, context: context)
+        as? NotisStoneBlockingStrategy
+    else { return }
+    strategy.cancelWithoutScan(context: context, session: session)
+  }
+
   func toggleBreak(context: ModelContext) {
     do {
       if getActiveSession(context: context)?.isBreakActive == true {

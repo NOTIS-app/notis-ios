@@ -28,6 +28,8 @@ Afwijken mag alleen waar iOS geen keus laat. ✅ = aangepast in iOS, 🍎 = kan 
 | 14 | Geen toestemming: kaart "Toestemmingen aanzetten" i.p.v. status | eigen kaart boven de steen | ✅ |
 | 15 | Teksten vrij: "Tik op de steen om te zien hoe het werkt" / "Koppel je NOTIS om te kunnen blokkeren" | eigen teksten | ✅ (🍎 op iOS start tikken ook de scan, dus de hint zegt dat) |
 | 16 | Na scannen een melding "Apps op slot" / "Apps weer vrij" | niets | ✅ in het NFC-venster van iOS |
+| 16a | Bedenktijd: 30 seconden na vergrendelen een ronde knop "Annuleren" met aflopende ring, op de plek van de noodknop | – | ✅ |
+| 16b | Knop "Op slot zonder tikken" → onderblad "Op slot met welke steen?" met je stenen (en klassen); ontgrendelen alleen met een steen | – | ✅ (klassen pas als `schoolLive` aan staat) |
 | 17 | Onbekende steen: "Deze steen is niet gekoppeld" | eigen tekst | ✅ |
 
 ## Mijn NOTIS
@@ -36,7 +38,7 @@ Afwijken mag alleen waar iOS geen keus laat. ✅ = aangepast in iOS, 🍎 = kan 
 |---|---|---|---|
 | 18 | Tab met kop "Mijn NOTIS" + "Elke NOTIS blokkeert zijn eigen apps" + (i)-knop met uitleg "Hoe werken de stenen?" | pop-up met lijst | ✅ |
 | 19 | Kaart per steen: kleine steen, naam, "3 apps toegestaan" / "Alles geblokkeerd", ⋮-menu (Hernoemen, Verwijderen); tik = apps wijzigen | lijst → detailscherm | ✅ |
-| 20 | Grote knop "Nieuwe NOTIS koppelen", max 5 stenen | klein knopje, geen max | ✅ |
+| 20 | Grote knop "Nieuwe NOTIS koppelen", geen maximum aantal stenen | klein knopje, geen max | ✅ |
 | 21 | Scankaart "Wachten op je NOTIS…" → "NOTIS gekoppeld!" | alleen iOS-venster | ✅ succeskaart na het scannen |
 | 22 | Nieuwe steen: onderblad "Je nieuwe NOTIS", naam, keuze "Nieuwe apps kiezen" / "Zelfde als X", knop "Apps kiezen" | formulier | ✅ |
 | 23 | Lege staat: kaart met grote steen, "Nog geen NOTIS gekoppeld" | tekstregel | ✅ |
@@ -65,9 +67,9 @@ Afwijken mag alleen waar iOS geen keus laat. ✅ = aangepast in iOS, 🍎 = kan 
 
 | # | Android | iOS (was) | Status |
 |---|---|---|---|
-| 34 | 4 stappen: Welkom ("Tik. Focus. Klaar.") → Toestemmingen → Apps → Scan je NOTIS ("Later koppelen") | geen onboarding | ✅ |
+| 34 | 4 stappen: Welkom ("Tik. Focus. Klaar.") → Toestemmingen → Apps → "Koppel je NOTIS straks" (koppelen gebeurt bij Mijn NOTIS; de oude scanstap staat achter `onboardingPairing`) | geen onboarding | ✅ |
 | 35 | Toestemmingen: 3 Android-rechten | – | 🍎 iOS heeft er één: Schermtijd |
-| 36 | Eerste steen krijgt de apps van de app-stap | – | ✅ |
+| 36 | Eerste steen krijgt de apps van de app-stap | – | ✅ (bewaard tot je de eerste steen koppelt) |
 
 ## Blokkeerscherm
 

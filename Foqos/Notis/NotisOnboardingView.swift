@@ -2,8 +2,9 @@ import FamilyControls
 import SwiftData
 import SwiftUI
 
-/// The four onboarding steps of the Android app: welcome, permissions, apps, scan your NOTIS.
-/// The first stone takes the apps chosen on the apps step.
+/// The four onboarding steps of the Android app: welcome, permissions, apps and, last, scan your
+/// NOTIS (or, without `FeatureFlags.onboardingPairing`, pair it later in "Mijn NOTIS"). The first
+/// stone takes the apps chosen on the apps step.
 struct NotisOnboardingView: View {
   let onComplete: () -> Void
 
@@ -38,7 +39,8 @@ struct NotisOnboardingView: View {
         case .welcome: welcome
         case .permissions: permissions
         case .apps: apps
-        case .pairing: pairing
+        case .pairing:
+          if FeatureFlags.onboardingPairing { pairing } else { pairLater }
         }
       }
       .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
@@ -229,7 +231,10 @@ struct NotisOnboardingView: View {
 
       Spacer()
 
-      Button(appCount == 1 ? "Doorgaan · 1 app" : "Doorgaan · \(appCount) apps") { go(to: .pairing) }
+      Button(appCount == 1 ? "Doorgaan · 1 app" : "Doorgaan · \(appCount) apps") {
+        BlockedProfiles.saveOnboardingApps(selection)
+        go(to: .pairing)
+      }
         .buttonStyle(NotisPrimaryButtonStyle())
 
       skipButton("Later kiezen") {
@@ -272,7 +277,7 @@ struct NotisOnboardingView: View {
       }
       .padding(.top, 32)
 
-      Text("Je kunt tot 5 stenen koppelen, bijvoorbeeld thuis, op je werk of op school.")
+      Text("Je kunt zoveel stenen koppelen als je wilt, bijvoorbeeld thuis, op je werk of op school.")
         .font(.satoshi(13))
         .foregroundStyle(NotisBrand.inkSoft)
         .multilineTextAlignment(.center)
@@ -284,6 +289,36 @@ struct NotisOnboardingView: View {
         .padding(.bottom, 64)
     }
     .animation(.easeInOut(duration: 0.3), value: isPairingSuccess)
+  }
+
+  // MARK: - Pair later
+
+  /// Android's `PairLaterPage`: the stone is paired later, in "Mijn NOTIS".
+  private var pairLater: some View {
+    VStack(spacing: 0) {
+      Spacer()
+
+      NotisStoneView(isLocked: false, width: 240)
+
+      Text("Koppel je NOTIS straks")
+        .font(.satoshi(26, .bold))
+        .foregroundStyle(NotisBrand.ink)
+        .padding(.top, 32)
+      Text(
+        "Je koppelt je steen zometeen in de app, bij het tabblad Mijn NOTIS. Je kunt zoveel stenen koppelen als je wilt."
+      )
+      .font(.satoshi(14))
+      .lineSpacing(6)
+      .foregroundStyle(NotisBrand.inkSoft)
+      .multilineTextAlignment(.center)
+      .padding(.top, 12)
+
+      Spacer()
+
+      Button("Naar NOTIS", action: onComplete)
+        .buttonStyle(NotisPrimaryButtonStyle())
+        .padding(.bottom, 72)
+    }
   }
 
   private func startPairing() {

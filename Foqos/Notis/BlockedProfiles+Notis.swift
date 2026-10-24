@@ -13,6 +13,23 @@ extension BlockedProfiles {
     blockingStrategyId == NotisStoneBlockingStrategy.id && notisStoneTag != nil
   }
 
+  /// "3 apps toegestaan", as on the stone cards of Android's "Mijn NOTIS".
+  var notisAppsSummary: String {
+    let count = FamilyActivityUtil.countSelectedActivities(selectedActivity, allowMode: enableAllowMode)
+    if enableAllowMode {
+      switch count {
+      case 0: return String(localized: "Alles geblokkeerd")
+      case 1: return String(localized: "1 app toegestaan")
+      default: return String(localized: "\(count) apps toegestaan")
+      }
+    }
+    switch count {
+    case 0: return String(localized: "Nog geen apps · tik om te kiezen")
+    case 1: return String(localized: "1 app")
+    default: return String(localized: "\(count) apps")
+    }
+  }
+
   static func fetchNotisStones(in context: ModelContext) -> [BlockedProfiles] {
     let profiles = (try? fetchProfiles(in: context)) ?? []
     return profiles.filter(\.isNotisStone)
@@ -53,6 +70,21 @@ extension BlockedProfiles {
     profile.updatedAt = Date()
     updateSnapshot(for: profile)
     try context.save()
+  }
+
+  /// The apps chosen during onboarding, kept until the first stone is paired (Android keeps
+  /// them in its default profile).
+  private static let onboardingAppsKey = "notis.onboardingApps"
+
+  static func saveOnboardingApps(_ selection: FamilyActivitySelection) {
+    UserDefaults.standard.set(try? JSONEncoder().encode(selection), forKey: onboardingAppsKey)
+  }
+
+  /// Hands the onboarding apps to the first stone, once.
+  static func takeOnboardingApps() -> FamilyActivitySelection? {
+    defer { UserDefaults.standard.removeObject(forKey: onboardingAppsKey) }
+    guard let data = UserDefaults.standard.data(forKey: onboardingAppsKey) else { return nil }
+    return try? JSONDecoder().decode(FamilyActivitySelection.self, from: data)
   }
 
   static func updateNotisStoneApps(

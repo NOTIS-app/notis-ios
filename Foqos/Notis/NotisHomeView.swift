@@ -21,6 +21,9 @@ struct NotisHomeView: View {
 
   @State private var showScanHint = false
   @State private var showEmergencySheet = false
+  @State private var showLockFromAppSheet = false
+  /// Set while the lock that just started can still be cancelled without a stone.
+  @State private var graceEndsAt: Date?
   @State private var errorMessage: String?
 
   @AppStorage(NotisEmergencyUnlock.endsAtKey) private var emergencyEndsAt: Double = 0
@@ -46,6 +49,10 @@ struct NotisHomeView: View {
 
   private var isEmergencyActive: Bool {
     isLocked && emergencyEndDate > Date()
+  }
+
+  private var isGracePeriod: Bool {
+    isLocked && !isEmergencyActive && graceEndsAt != nil
   }
 
   /// Locked with a stone: the dark ink screen, as on Android.
@@ -86,7 +93,16 @@ struct NotisHomeView: View {
       }
       .scrollBounceBehavior(.basedOnSize)
 
-      if isInkLocked && FeatureFlags.emergencyUnlock && emergencyRemaining > 0 {
+      if isGracePeriod, let endsAt = graceEndsAt {
+        VStack {
+          Spacer()
+          NotisGraceButton(endsAt: endsAt, palette: palette) {
+            graceEndsAt = nil
+            strategyManager.cancelNotisSessionInGracePeriod(context: context)
+          }
+          .padding(.bottom, 48)
+        }
+      } else if isInkLocked && FeatureFlags.emergencyUnlock && emergencyRemaining > 0 {
         VStack {
           Spacer()
           NotisEmergencyButton(remaining: emergencyRemaining, palette: palette) {
@@ -109,6 +125,14 @@ struct NotisHomeView: View {
         onCancel: { showEmergencySheet = false }
       )
       .presentationDetents([.height(380)])
+      .presentationBackground(NotisBrand.paper)
+    }
+    .sheet(isPresented: $showLockFromAppSheet) {
+      NotisLockFromAppSheet(stones: stones) { stone in
+        showLockFromAppSheet = false
+        strategyManager.startNotisStoneWithoutScan(context: context, stone: stone)
+      }
+      .presentationDetents([.medium, .large])
       .presentationBackground(NotisBrand.paper)
     }
     .alert(
@@ -147,6 +171,21 @@ struct NotisHomeView: View {
       }
       NotisEmergencyUnlock.clear()
       refresh()
+    }
+    .task(id: strategyManager.activeSession?.startTime) {
+      // Android's grace period: the cancel button replaces the emergency one until it runs out.
+      guard let start = strategyManager.activeSession?.startTime else {
+        graceEndsAt = nil
+        return
+      }
+      let endsAt = NotisGracePeriod.endDate(forSessionStartedAt: start)
+      guard endsAt > Date() else {
+        graceEndsAt = nil
+        return
+      }
+      graceEndsAt = endsAt
+      try? await Task.sleep(for: .seconds(endsAt.timeIntervalSinceNow))
+      if !Task.isCancelled { graceEndsAt = nil }
     }
     .onAppear(perform: refresh)
   }
@@ -203,6 +242,11 @@ struct NotisHomeView: View {
             .font(.satoshi(14, showScanHint ? .medium : .regular))
             .foregroundStyle(showScanHint ? palette.primary : palette.onSurfaceVariant.opacity(0.6))
             .multilineTextAlignment(.center)
+          if FeatureFlags.lockFromApp && !stones.isEmpty {
+            Button("Op slot zonder tikken") { showLockFromAppSheet = true }
+              .buttonStyle(NotisTonalButtonStyle())
+              .padding(.top, 20)
+          }
         }
       }
     }
