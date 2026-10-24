@@ -294,9 +294,14 @@ struct NotisHomeView: View {
   // MARK: - Actions
 
   private func stoneLongPressed() {
-    guard canChooseStone else { return }
+    guard FeatureFlags.lockFromApp && !isLocked else { return }
     didLongPressStone = true
     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+    // Without Screen Time nothing can be locked: ask for it first, as a tap does.
+    guard isAuthorized else {
+      requestAuthorizer.requestAuthorization()
+      return
+    }
     showLockFromAppSheet = true
   }
 
