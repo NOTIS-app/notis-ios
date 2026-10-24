@@ -311,31 +311,48 @@ struct NotisOnboardingView: View {
 
   // MARK: - Pair later
 
-  /// Android's `PairLaterPage`: the stone is paired later, in "Mijn NOTIS".
+  /// Android's `PairLaterPage`: how to pair a stone in "Mijn NOTIS", in three steps, then
+  /// "Aan de slag" goes home.
   private var pairLater: some View {
     VStack(spacing: 0) {
       Spacer()
 
-      NotisStoneView(isLocked: false, width: 240)
+      NotisStoneView(isLocked: false, width: 180)
 
-      Text("Koppel je NOTIS straks")
+      Text("Zo koppel je je NOTIS")
         .font(.satoshi(26, .bold))
         .foregroundStyle(NotisBrand.ink)
-        .padding(.top, 32)
-      Text(
-        "Je koppelt je steen zometeen in de app, bij het tabblad Mijn NOTIS. Je kunt zoveel stenen koppelen als je wilt."
-      )
-      .font(.satoshi(14))
-      .lineSpacing(6)
-      .foregroundStyle(NotisBrand.inkSoft)
-      .multilineTextAlignment(.center)
-      .padding(.top, 12)
+        .multilineTextAlignment(.center)
+        .padding(.top, 28)
+
+      VStack(alignment: .leading, spacing: 14) {
+        pairStep(1, "Tik bij Mijn NOTIS op Nieuwe NOTIS koppelen")
+        pairStep(2, "Geef je NOTIS een naam")
+        pairStep(3, "Kies de apps die jij wilt gebruiken")
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(16)
+      .notisCard()
+      .padding(.top, 24)
 
       Spacer()
 
-      Button("Naar NOTIS", action: onComplete)
+      Button("Aan de slag", action: onComplete)
         .buttonStyle(NotisPrimaryButtonStyle())
         .padding(.bottom, 72)
+    }
+  }
+
+  private func pairStep(_ number: Int, _ text: LocalizedStringKey) -> some View {
+    HStack(spacing: 14) {
+      Text("\(number)")
+        .font(.satoshi(14, .bold))
+        .foregroundStyle(.white)
+        .frame(width: 28, height: 28)
+        .background(NotisBrand.mandarinDark, in: Circle())
+      Text(text)
+        .font(.satoshi(15))
+        .foregroundStyle(NotisBrand.ink)
     }
   }
 

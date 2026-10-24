@@ -22,8 +22,9 @@ enum FeatureFlags {
   /// Onboarding step "Welke apps mag je gebruiken?". Off: apps are chosen per stone in "Mijn NOTIS".
   static let onboardingApps = false
 
-  /// Last onboarding page "Koppel je NOTIS straks" (only without `onboardingPairing`).
-  static let onboardingPairLater = false
+  /// Last onboarding page "Zo koppel je je NOTIS": three steps for "Mijn NOTIS", then
+  /// "Aan de slag" (only without `onboardingPairing`).
+  static let onboardingPairLater = true
 
   /// Lock from the app: press and hold the home stone to pick one of your stones instead of
   /// scanning it. Unlocking still takes a stone.

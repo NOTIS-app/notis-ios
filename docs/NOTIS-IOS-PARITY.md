@@ -67,7 +67,7 @@ Afwijken mag alleen waar iOS geen keus laat. ✅ = aangepast in iOS, 🍎 = kan 
 
 | # | Android | iOS (was) | Status |
 |---|---|---|---|
-| 34 | 4 stappen: Welkom ("Tik. Focus. Klaar.") → Toestemmingen, daarna meteen de app. Stenen koppelen en apps kiezen gebeurt bij Mijn NOTIS (de stappen Apps, "Koppel je NOTIS straks" en scannen staan achter `onboardingApps`, `onboardingPairLater` en `onboardingPairing`) | geen onboarding | ✅ |
+| 34 | 4 stappen: Welkom ("Tik. Focus. Klaar.") → Toestemmingen → "Zo koppel je je NOTIS" (1 Tik bij Mijn NOTIS op Nieuwe NOTIS koppelen, 2 Geef je NOTIS een naam, 3 Kies de apps die jij wilt gebruiken; knop "Aan de slag" naar Home). De stappen Apps en scannen staan uit achter `onboardingApps` en `onboardingPairing` | geen onboarding | ✅ |
 | 35 | Toestemmingen: 3 Android-rechten | – | 🍎 iOS heeft er één: Schermtijd |
 | 36 | Eerste steen krijgt de apps van de app-stap (alleen als die stap aan staat) | – | ✅ (bewaard tot je de eerste steen koppelt) |
 
