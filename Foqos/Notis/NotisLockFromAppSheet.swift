@@ -14,7 +14,9 @@ struct NotisLockFromAppSheet: View {
           .foregroundStyle(NotisBrand.ink)
           .padding(.top, 28)
         Text(
-          "De apps van die steen blijven bruikbaar. Weer vrij geven kan alleen door je telefoon tegen een NOTIS te houden."
+          stones.isEmpty
+            ? "Je hebt nog geen steen gekoppeld. Koppel er eerst een bij Mijn NOTIS."
+            : "De apps van die steen blijven bruikbaar. Weer vrij geven kan alleen door je telefoon tegen een NOTIS te houden."
         )
         .font(.satoshi(14))
         .lineSpacing(4)

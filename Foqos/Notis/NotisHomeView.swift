@@ -248,7 +248,7 @@ struct NotisHomeView: View {
             .font(.satoshi(14, showScanHint ? .medium : .regular))
             .foregroundStyle(showScanHint ? palette.primary : palette.onSurfaceVariant.opacity(0.6))
             .multilineTextAlignment(.center)
-          if canChooseStone && !showScanHint {
+          if canChooseStone && !stones.isEmpty && !showScanHint {
             Text("Of houd de steen ingedrukt om er een te kiezen")
               .font(.satoshi(14))
               .foregroundStyle(palette.onSurfaceVariant.opacity(0.6))
@@ -267,9 +267,10 @@ struct NotisHomeView: View {
     return String(localized: "VRIJ")
   }
 
-  /// Press and hold the free stone to pick the stone to lock with (Android: same gesture).
+  /// Press and hold the free stone to pick the stone to lock with (Android: same gesture). With no
+  /// stone yet the sheet says to pair one.
   private var canChooseStone: Bool {
-    FeatureFlags.lockFromApp && !isLocked && isAuthorized && !stones.isEmpty
+    FeatureFlags.lockFromApp && !isLocked && isAuthorized
   }
 
   private var freeHint: String {
