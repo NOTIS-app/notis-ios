@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Android's `LockFromAppSheet`, "Op slot zonder tikken": pick the stone to lock with. Unlocking
-/// still takes a stone. iOS has no classes yet (`FeatureFlags.schoolLive` is off).
+/// Android's `LockFromAppSheet`, opened by pressing and holding the home stone: pick the stone
+/// to lock with. Unlocking still takes a stone. iOS has no classes yet (`FeatureFlags.schoolLive` is off).
 struct NotisLockFromAppSheet: View {
   let stones: [BlockedProfiles]
   let onChoose: (BlockedProfiles) -> Void

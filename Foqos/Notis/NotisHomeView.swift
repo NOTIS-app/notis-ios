@@ -22,6 +22,8 @@ struct NotisHomeView: View {
   @State private var showScanHint = false
   @State private var showEmergencySheet = false
   @State private var showLockFromAppSheet = false
+  /// A long press also ends in the button's tap; this swallows that tap.
+  @State private var didLongPressStone = false
   /// Set while the lock that just started can still be cancelled without a stone.
   @State private var graceEndsAt: Date?
   @State private var errorMessage: String?
@@ -80,7 +82,11 @@ struct NotisHomeView: View {
             NotisStoneView(isLocked: isLocked, showScanHint: showScanHint)
           }
           .buttonStyle(StonePressStyle())
+          .simultaneousGesture(
+            LongPressGesture(minimumDuration: 0.5).onEnded { _ in stoneLongPressed() }
+          )
           .accessibilityLabel(isLocked ? "Ontgrendel met je NOTIS" : "Vergrendel met je NOTIS")
+          .accessibilityAction(named: "Kies een steen") { stoneLongPressed() }
 
           Spacer().frame(height: 32)
 
@@ -242,10 +248,12 @@ struct NotisHomeView: View {
             .font(.satoshi(14, showScanHint ? .medium : .regular))
             .foregroundStyle(showScanHint ? palette.primary : palette.onSurfaceVariant.opacity(0.6))
             .multilineTextAlignment(.center)
-          if FeatureFlags.lockFromApp && !stones.isEmpty {
-            Button("Op slot zonder tikken") { showLockFromAppSheet = true }
-              .buttonStyle(NotisTonalButtonStyle())
-              .padding(.top, 20)
+          if canChooseStone && !showScanHint {
+            Text("Of houd de steen ingedrukt om er een te kiezen")
+              .font(.satoshi(14))
+              .foregroundStyle(palette.onSurfaceVariant.opacity(0.6))
+              .multilineTextAlignment(.center)
+              .padding(.top, 4)
           }
         }
       }
@@ -257,6 +265,11 @@ struct NotisHomeView: View {
     if isEmergencyActive { return String(localized: "PAUZE") }
     if isLocked { return String(localized: "OP SLOT") }
     return String(localized: "VRIJ")
+  }
+
+  /// Press and hold the free stone to pick the stone to lock with (Android: same gesture).
+  private var canChooseStone: Bool {
+    FeatureFlags.lockFromApp && !isLocked && isAuthorized && !stones.isEmpty
   }
 
   private var freeHint: String {
@@ -279,7 +292,18 @@ struct NotisHomeView: View {
 
   // MARK: - Actions
 
+  private func stoneLongPressed() {
+    guard canChooseStone else { return }
+    didLongPressStone = true
+    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+    showLockFromAppSheet = true
+  }
+
   private func stoneTapped() {
+    if didLongPressStone {
+      didLongPressStone = false
+      return
+    }
     if isLocked {
       // Also during the emergency pause: a scan ends the whole session, like Android.
       showScanHint = true

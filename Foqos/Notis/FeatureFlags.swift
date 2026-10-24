@@ -25,8 +25,8 @@ enum FeatureFlags {
   /// Last onboarding page "Koppel je NOTIS straks" (only without `onboardingPairing`).
   static let onboardingPairLater = false
 
-  /// Lock from the app: pick one of your stones on the home screen instead of scanning it.
-  /// Unlocking still takes a stone.
+  /// Lock from the app: press and hold the home stone to pick one of your stones instead of
+  /// scanning it. Unlocking still takes a stone.
   static let lockFromApp = true
 
   /// School live: students join a class and a teacher's class stone locks the whole class.

@@ -29,7 +29,7 @@ Afwijken mag alleen waar iOS geen keus laat. ✅ = aangepast in iOS, 🍎 = kan 
 | 15 | Teksten vrij: "Tik op de steen om te zien hoe het werkt" / "Koppel je NOTIS om te kunnen blokkeren" | eigen teksten | ✅ (🍎 op iOS start tikken ook de scan, dus de hint zegt dat) |
 | 16 | Na scannen een melding "Apps op slot" / "Apps weer vrij" | niets | ✅ in het NFC-venster van iOS |
 | 16a | Bedenktijd: 30 seconden na vergrendelen een ronde knop "Annuleren" met aflopende ring, op de plek van de noodknop | – | ✅ |
-| 16b | Knop "Op slot zonder tikken" → onderblad "Op slot met welke steen?" met je stenen (en klassen); ontgrendelen alleen met een steen | – | ✅ (klassen pas als `schoolLive` aan staat) |
+| 16b | Steen ingedrukt houden → onderblad "Op slot met welke steen?" met je stenen (en klassen), hint "Of houd de steen ingedrukt om er een te kiezen"; ontgrendelen alleen met een steen | – | ✅ (klassen pas als `schoolLive` aan staat) |
 | 17 | Onbekende steen: "Deze steen is niet gekoppeld" | eigen tekst | ✅ |
 
 ## Mijn NOTIS
