@@ -24,6 +24,11 @@ struct NotisHomeView: View {
   @State private var showScanHint = false
   @State private var showEmergencySheet = false
   @State private var showLockFromAppSheet = false
+  @State private var showSchoolApps = false
+  @State private var showRecoveryCode = false
+  @State private var showTeacherRooms = false
+  @State private var teacherScanner = NFCScannerUtil()
+  @ObservedObject private var teacher = NotisTeacher.shared
   /// A long press also ends in the button's tap; this swallows that tap.
   @State private var didLongPressStone = false
   /// Set while the lock that just started can still be cancelled without a stone.
@@ -164,11 +169,47 @@ struct NotisHomeView: View {
           if let room = school.roomFor(uid: invite.uid) {
             strategyManager.startNotisSchoolWithoutScan(context: context, room: room)
           }
+          // Choosing is open right after joining: offer it once the join sheet has closed.
+          Task {
+            try? await Task.sleep(for: .milliseconds(700))
+            showSchoolApps = true
+          }
         },
         onCancel: { school.pendingInvite = nil }
       )
       .presentationDetents([.medium])
       .presentationBackground(NotisBrand.paper)
+    }
+    .sheet(isPresented: $showTeacherRooms) {
+      NotisTeacherRoomsSheet(teacher: teacher) { room in
+        showTeacherRooms = false
+        Task {
+          await teacher.checkIn(room)
+          teacher.openRoom = room
+        }
+      }
+      .presentationDetents([.medium, .large])
+      .presentationBackground(NotisBrand.paper)
+    }
+    .fullScreenCover(item: $teacher.openRoom) { room in
+      NotisRoomLiveView(room: room, teacher: teacher) { teacher.openRoom = nil }
+    }
+    .sheet(isPresented: $showRecoveryCode) {
+      NotisRecoveryCodeSheet(
+        school: school,
+        onUnlocked: {
+          showRecoveryCode = false
+          strategyManager.endNotisSchoolLockWithCode(context: context)
+        },
+        onCancel: { showRecoveryCode = false }
+      )
+      .presentationDetents([.medium])
+      .presentationBackground(NotisBrand.paper)
+    }
+    .sheet(isPresented: $showSchoolApps) {
+      NotisSchoolAppsSheet(school: school, isSchoolLocked: isSchoolLocked)
+        .presentationDetents([.large])
+        .presentationBackground(NotisBrand.paper)
     }
     .alert(
       errorMessage ?? "",
@@ -249,6 +290,24 @@ struct NotisHomeView: View {
             .padding(.top, 8)
         }
 
+        // Rooms: the apps for the school lock, chosen in Apple's picker (8c).
+        if FeatureFlags.rooms && school.school != nil {
+          Button(school.hasChosenForCurrentList ? "Apps voor school" : "Kies je apps voor school") {
+            showSchoolApps = true
+          }
+          .font(.satoshi(15, .medium))
+          .foregroundStyle(school.hasChosenForCurrentList ? palette.onSurface.opacity(0.6) : palette.primary)
+          .padding(.top, 8)
+        }
+
+        // Rooms: when the room's stone doesn't work, a teacher gives a recovery code (8d).
+        if isSchoolLocked {
+          Button("Ontgrendelen met herstelcode") { showRecoveryCode = true }
+            .font(.satoshi(15, .medium))
+            .foregroundStyle(palette.onSurface.opacity(0.6))
+            .padding(.top, 4)
+        }
+
         Spacer().frame(height: 16)
 
         if isEmergencyActive {
@@ -326,6 +385,11 @@ struct NotisHomeView: View {
     guard FeatureFlags.lockFromApp && !isLocked else { return }
     didLongPressStone = true
     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+    // Rooms: a teacher picks the room to watch; that needs no Screen Time.
+    if FeatureFlags.rooms && teacher.isTeacher {
+      showTeacherRooms = true
+      return
+    }
     // Without Screen Time nothing can be locked: ask for it first, as a tap does.
     guard isAuthorized else {
       requestAuthorizer.requestAuthorization()
@@ -346,6 +410,13 @@ struct NotisHomeView: View {
       return
     }
 
+    // Rooms: a signed-in teacher taps the room's stone to see who is locked there.
+    if FeatureFlags.rooms && teacher.isTeacher {
+      showScanHint = true
+      scanForTeacherRoom()
+      return
+    }
+
     guard isAuthorized else {
       requestAuthorizer.requestAuthorization()
       return
@@ -362,6 +433,24 @@ struct NotisHomeView: View {
     showScanHint = true
     // The scanned stone picks its own app list; `route` only routes to the NOTIS strategy.
     strategyManager.toggleBlocking(context: context, activeProfile: route)
+  }
+
+  /// Teacher: scan a stone; a room of their school opens its live list (and couples the
+  /// teacher to it for today, for the web page).
+  private func scanForTeacherRoom() {
+    teacherScanner.resultMessage = nil
+    teacherScanner.onError = { message in errorMessage = message }
+    teacherScanner.onTagScanned = { tag in
+      teacherScanner.resultMessage = String(localized: "Steen gelezen")
+      Task { @MainActor in
+        if let room = await teacher.roomForStone(uid: tag.id) {
+          teacher.openRoom = room
+        } else {
+          errorMessage = String(localized: "Deze steen hoort niet bij een lokaal van je school")
+        }
+      }
+    }
+    teacherScanner.scan(alertMessage: String(localized: "Houd de bovenkant van je iPhone tegen de steen van het lokaal"))
   }
 
   private func startEmergencyUnlock() {

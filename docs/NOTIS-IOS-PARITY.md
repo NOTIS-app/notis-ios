@@ -84,3 +84,14 @@ Afwijken mag alleen waar iOS geen keus laat. ✅ = aangepast in iOS, 🍎 = kan 
 - Scannen kan alleen nadat je in de app op de steen tikt (Android scant altijd op de achtergrond).
 - App-keuze gaat via Apple's eigen scherm, zonder app-namen voor NOTIS.
 - Eén toestemming (Schermtijd) in plaats van drie.
+
+## Lokalen (stappenplan-lokalen.md, schakelaar `rooms`)
+
+| # | Android | iOS | Status |
+|---|---|---|---|
+| 40 | Eerste tik op een schoolsteen: "Je zit op … Wat is je naam?", daarna op slot in dat lokaal | zelfde vraag als onderblad | ✅ (8b) |
+| 41 | Lokaalsteen: lock + inchecken; ander lokaal = verhuizen; zelfde lokaal = ontgrendelen; eigen steen ontgrendelt geen schoolslot | zelfde regels | ✅ (8b) |
+| 42 | Scannen met de app dicht (NDEF op de steen) | eerst op de steen in de app tikken | 🍎 iOS laat apps geen tags lezen op de achtergrond |
+| 43 | Status melden bij elke wijziging, met wachtrij en hartslag elke 15 min (WorkManager) | melden bij lock, unlock, verhuizen en elke keer dat de app opent | 🍎 geen betrouwbare achtergrondtaak; docent ziet sneller ❓ (nog te beslissen) |
+| 44 | Eindtijd: sessiewekker beëindigt het schoolslot | Schermtijd-planning (strategie-timer) beëindigt het | ✅ (8b), minimaal 15 minuten vooruit |
+| 45 | Schoollijst: Android-pakketten, leerling kan alleen uitzetten | leerling kiest zelf in Apples keuzescherm met de lijst ernaast; aantal en categorie gaan mee | 🍎 (8c) |

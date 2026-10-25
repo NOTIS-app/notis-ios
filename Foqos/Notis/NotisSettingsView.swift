@@ -13,6 +13,15 @@ struct NotisSettingsView: View {
   @EnvironmentObject private var strategyManager: StrategyManager
 
   @AppStorage(NotisNotifications.key) private var notificationsEnabled = true
+  @ObservedObject private var school = NotisSchool.shared
+  @ObservedObject private var teacher = NotisTeacher.shared
+  @State private var showLeaveSchool = false
+  @State private var showTeacherLogin = false
+  @State private var showRecoveryCode = false
+
+  private var isSchoolLocked: Bool {
+    strategyManager.activeSession?.blockedProfile.isNotisSchoolProfile == true
+  }
 
   private var isAuthorized: Bool {
     requestAuthorizer.isAuthorized || NotisDevice.isSimulator
@@ -36,6 +45,73 @@ struct NotisSettingsView: View {
             .padding(.top, 16)
 
           notificationsCard
+
+          // Rooms: the school this phone joined by tapping one of its stones (8d).
+          if FeatureFlags.rooms, let joined = school.school {
+            Text("SCHOOL & OUDERS")
+              .font(.satoshi(12, .bold))
+              .tracking(1)
+              .foregroundStyle(NotisBrand.inkSoft)
+              .padding(.top, 4)
+            SettingsCard {
+              SettingsRow(
+                icon: "graduationcap",
+                title: joined.name,
+                subtitle: String(localized: "Als \(school.displayName) · tik de steen van je lokaal om te locken"),
+                showsChevron: false
+              )
+              // No leaving during a school lock: that would be a way out of it.
+              if !isSchoolLocked {
+                SettingsRow(
+                  icon: "rectangle.portrait.and.arrow.right",
+                  title: String(localized: "Afmelden bij school"),
+                  action: { showLeaveSchool = true }
+                )
+              }
+            }
+          }
+
+          // Rooms, teacher side (8e): sign in, then tap the room's stone on Home.
+          if FeatureFlags.rooms {
+            Text("DOCENT")
+              .font(.satoshi(12, .bold))
+              .tracking(1)
+              .foregroundStyle(NotisBrand.inkSoft)
+              .padding(.top, 4)
+            SettingsCard {
+              if teacher.isTeacher {
+                SettingsRow(
+                  icon: "wave.3.right",
+                  title: String(localized: "Zie wie er gelocked is in je lokaal"),
+                  subtitle: String(
+                    localized:
+                      "Tik op Home op de steen van het lokaal waar je lesgeeft. Of houd de steen op Home ingedrukt en kies het lokaal."
+                  ),
+                  showsChevron: false
+                )
+                SettingsRow(
+                  icon: "key",
+                  title: String(localized: "Herstelcode"),
+                  subtitle: String(localized: "Voor een leerling wiens telefoon op slot blijft"),
+                  action: { showRecoveryCode = true }
+                )
+                SettingsRow(
+                  icon: "rectangle.portrait.and.arrow.right",
+                  title: String(localized: "Uitloggen"),
+                  subtitle: String(localized: "Docent: \(teacher.email ?? "")"),
+                  showsChevron: false,
+                  action: { Task { await teacher.signOut() } }
+                )
+              } else {
+                SettingsRow(
+                  icon: "person.crop.square",
+                  title: String(localized: "Ik ben docent"),
+                  subtitle: String(localized: "Log in om je lokaal te zien"),
+                  action: { showTeacherLogin = true }
+                )
+              }
+            }
+          }
 
           if FeatureFlags.schoolLive || FeatureFlags.parentControls {
             Text("KLAS & OUDERS")
@@ -101,6 +177,29 @@ struct NotisSettingsView: View {
     }
     .onAppear {
       requestAuthorizer.refreshAuthorizationStatus()
+    }
+    .sheet(isPresented: $showTeacherLogin) {
+      NotisTeacherLoginSheet(teacher: teacher) { showTeacherLogin = false }
+        .presentationDetents([.medium])
+        .presentationBackground(NotisBrand.paper)
+    }
+    .sheet(isPresented: $showRecoveryCode) {
+      NotisRecoveryCodeRevealSheet(teacher: teacher) { showRecoveryCode = false }
+        .presentationDetents([.medium])
+        .presentationBackground(NotisBrand.paper)
+    }
+    .alert(
+      String(localized: "\(school.school?.name ?? "") verlaten?"),
+      isPresented: $showLeaveSchool
+    ) {
+      Button("Verlaten", role: .destructive) {
+        Task { _ = await school.leaveSchool() }
+      }
+      Button("Annuleren", role: .cancel) {}
+    } message: {
+      Text(
+        "Je docenten zien dan niet meer of je telefoon gelocked is, en de stenen van deze school zetten je telefoon niet meer op slot."
+      )
     }
     .onChange(of: notificationsEnabled) { _, isOn in
       NotisNotifications.apply(isOn, context: context, strategyManager: strategyManager)

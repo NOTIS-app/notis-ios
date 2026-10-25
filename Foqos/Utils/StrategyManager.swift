@@ -130,6 +130,15 @@ class StrategyManager: ObservableObject {
     strategy.lockSchool(context: context, room: room)
   }
 
+  /// NOTIS rooms: a teacher's recovery code ends the school lock, as the room's stone would.
+  func endNotisSchoolLockWithCode(context: ModelContext) {
+    guard let session = activeSession, session.blockedProfile.isNotisSchoolProfile,
+      let strategy = getStrategy(id: NotisStoneBlockingStrategy.id, context: context)
+        as? NotisStoneBlockingStrategy
+    else { return }
+    strategy.cancelWithoutScan(context: context, session: session)
+  }
+
   /// NOTIS: cancel a lock within its grace period, without scanning a stone.
   func cancelNotisSessionInGracePeriod(context: ModelContext) {
     guard let session = activeSession,

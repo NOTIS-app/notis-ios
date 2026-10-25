@@ -82,6 +82,9 @@ final class NotisSchool: ObservableObject {
     static let school = "notis.school"
     static let currentRoom = "notis.school.currentRoomId"
     static let displayName = "notis.school.displayName"
+    static let chosenVersion = "notis.school.chosenListVersion"
+    static let appCount = "notis.school.appCount"
+    static let hasCategory = "notis.school.hasCategory"
   }
 
   private init() {
@@ -184,11 +187,83 @@ final class NotisSchool: ObservableObject {
     }
   }
 
+  // MARK: - App choice (8c)
+
+  /// The teacher pressed "Keuze openen" for the room this phone is checked in to.
+  @Published private(set) var isChoiceOpenedByTeacher = false
+
+  /// The version of the school's list the student last chose apps for.
+  private var chosenListVersion: Int {
+    get { defaults.integer(forKey: Keys.chosenVersion) }
+    set { defaults.set(newValue, forKey: Keys.chosenVersion) }
+  }
+
+  /// Choosing is open after joining or a change to the school's list (until the student
+  /// chose), and for a few minutes after a teacher opens it. Otherwise the choice is fixed.
+  var canChooseApps: Bool {
+    guard let school else { return false }
+    return chosenListVersion < school.allowedAppsVersion || isChoiceOpenedByTeacher
+  }
+
+  var hasChosenForCurrentList: Bool {
+    guard let school else { return false }
+    return chosenListVersion >= school.allowedAppsVersion
+  }
+
+  /// Asks the server whether a teacher opened the choice for this phone's room.
+  func refreshChoiceOpen() async {
+    guard school != nil else { return }
+    do {
+      try await SchoolBackend.ensureStudentSignedIn()
+      let open: Bool = try await client.rpc("my_choice_open").execute().value
+      isChoiceOpenedByTeacher = open
+    } catch {
+      print("NotisSchool choice check failed: \(error)")
+    }
+  }
+
+  /// The student saved their apps: remembered for the app check that goes with every report.
+  func didChooseApps(count: Int, hasCategory: Bool) {
+    defaults.set(count, forKey: Keys.appCount)
+    defaults.set(hasCategory, forKey: Keys.hasCategory)
+    chosenListVersion = school?.allowedAppsVersion ?? chosenListVersion
+    isChoiceOpenedByTeacher = false
+    objectWillChange.send()
+  }
+
+  // MARK: - Recovery code (8d)
+
+  enum UnlockCodeResult {
+    case ok, wrong, tooMany, failed
+  }
+
+  private struct CodeParams: Encodable {
+    let p_code: String
+  }
+
+  /// Tries a teacher's recovery code. On `.ok` the server already made a new code; the
+  /// caller ends the school lock. Needs internet: the server keeps the code.
+  func useUnlockCode(_ code: String) async -> UnlockCodeResult {
+    do {
+      try await SchoolBackend.ensureStudentSignedIn()
+      let ok: Bool = try await client
+        .rpc("use_unlock_code", params: CodeParams(p_code: code.trimmingCharacters(in: .whitespaces)))
+        .execute().value
+      return ok ? .ok : .wrong
+    } catch {
+      print("NotisSchool recovery code failed: \(error)")
+      return "\(error)".contains("Too many attempts") ? .tooMany : .failed
+    }
+  }
+
   // MARK: - Status
 
   private struct ReportParams: Encodable {
     let p_state: String
     let p_room_id: String?
+    let p_app_count: Int?
+    let p_has_category: Bool?
+    let p_list_version: Int?
   }
 
   /// Reports the lock state; a lock in a room also checks in to that room (the server ends
@@ -197,10 +272,19 @@ final class NotisSchool: ObservableObject {
   func report(_ state: StudentState) async {
     guard school != nil else { return }
     let roomId = state == .locked ? currentRoomId : nil
+    // The app check (8c): how many apps the student allowed, whether a whole category, and
+    // for which version of the school's list. Only once the student has chosen.
+    let hasCheck = roomId != nil && defaults.object(forKey: Keys.appCount) != nil
+    let params = ReportParams(
+      p_state: state.rawValue,
+      p_room_id: roomId,
+      p_app_count: hasCheck ? defaults.integer(forKey: Keys.appCount) : nil,
+      p_has_category: hasCheck ? defaults.bool(forKey: Keys.hasCategory) : nil,
+      p_list_version: hasCheck ? chosenListVersion : nil
+    )
     do {
       try await SchoolBackend.ensureStudentSignedIn()
-      try await client.rpc("report_status", params: ReportParams(p_state: state.rawValue, p_room_id: roomId))
-        .execute()
+      try await client.rpc("report_status", params: params).execute()
     } catch {
       print("NotisSchool report failed: \(error)")
     }
@@ -215,6 +299,7 @@ final class NotisSchool: ObservableObject {
     let state: StudentState = isSchoolLocked ? (isEmergency ? .emergency : .locked) : .unlocked
     Task {
       await refreshSchool()
+      await refreshChoiceOpen()
       await report(state)
     }
   }

@@ -21,16 +21,16 @@ struct NotisSchoolJoinSheet: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
       Text("Je zit op \(schoolName)")
-        .font(NotisFont.satoshi(22, .bold))
+        .font(.satoshi(22, .bold))
         .foregroundStyle(NotisBrand.ink)
       Text(
         "Wat is je naam? Je docenten zien deze naam, samen met of je telefoon gelocked is. Je vult dit maar één keer in."
       )
-      .font(NotisFont.satoshi(15))
+      .font(.satoshi(15))
       .foregroundStyle(NotisBrand.inkSoft)
 
       TextField("Je naam", text: $name)
-        .font(NotisFont.satoshi(17))
+        .font(.satoshi(17))
         .textInputAutocapitalization(.words)
         .padding(14)
         .background(NotisBrand.card, in: RoundedRectangle(cornerRadius: 14))
@@ -41,7 +41,7 @@ struct NotisSchoolJoinSheet: View {
 
       if let errorText {
         Text(errorText)
-          .font(NotisFont.satoshi(13))
+          .font(.satoshi(13))
           .foregroundStyle(.red)
       }
 
@@ -52,7 +52,7 @@ struct NotisSchoolJoinSheet: View {
           if isBusy {
             ProgressView().tint(.white)
           } else {
-            Text("Aansluiten en locken").font(NotisFont.satoshi(16, .bold))
+            Text("Aansluiten en locken").font(.satoshi(16, .bold))
           }
         }
         .frame(maxWidth: .infinity)
@@ -63,7 +63,7 @@ struct NotisSchoolJoinSheet: View {
       .disabled(!canJoin)
 
       Button("Annuleren", action: onCancel)
-        .font(NotisFont.satoshi(15, .medium))
+        .font(.satoshi(15, .medium))
         .foregroundStyle(NotisBrand.inkSoft)
         .frame(maxWidth: .infinity)
         .disabled(isBusy)
