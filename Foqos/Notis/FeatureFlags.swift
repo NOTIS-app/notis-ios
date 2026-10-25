@@ -37,6 +37,11 @@ enum FeatureFlags {
   /// Parent controls: a parent sets the app list for a child's phone. Off for the first
   /// TestFlight test.
   static let parentControls = false
+
+  /// Rooms (stappenplan-lokalen.md): every classroom has a stone. Students join a school by
+  /// tapping one of its stones and check in per room; a teacher taps the room's stone and sees
+  /// who is locked. Mirrors `FeatureFlags.ROOMS` on Android. Replaces `schoolLive`'s classes.
+  static let rooms = true
 }
 
 enum NotisDevice {

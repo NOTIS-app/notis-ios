@@ -14,6 +14,7 @@
 		808A3C4E2E4ACD18002A7812 /* ManagedSettingsUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 808A3C4D2E4ACD18002A7812 /* ManagedSettingsUI.framework */; };
 		808A3C562E4ACD18002A7812 /* FoqosShieldConfig.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 808A3C4A2E4ACD18002A7812 /* FoqosShieldConfig.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		80F674AB2D6185510056977F /* CodeScanner in Frameworks */ = {isa = PBXBuildFile; productRef = 80F674AA2D6185510056977F /* CodeScanner */; };
+		A0B1C2D3E4F5060708090A03 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = A0B1C2D3E4F5060708090A02 /* Supabase */; };
 		80FF388E2D80DB540032BC5E /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 80C6CAFA2D4301B3008680F4 /* WidgetKit.framework */; };
 		80FF388F2D80DB540032BC5E /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 80C6CAFC2D4301B3008680F4 /* SwiftUI.framework */; };
 		80FF389C2D80DB560032BC5E /* FoqosWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 80FF388D2D80DB540032BC5E /* FoqosWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -386,6 +387,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				80F674AB2D6185510056977F /* CodeScanner in Frameworks */,
+				A0B1C2D3E4F5060708090A03 /* Supabase in Frameworks */,
 				803989B32CCC06D600E87F57 /* StoreKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -590,6 +592,7 @@
 			name = foqos;
 			packageProductDependencies = (
 				80F674AA2D6185510056977F /* CodeScanner */,
+				A0B1C2D3E4F5060708090A02 /* Supabase */,
 			);
 			productName = foqos;
 			productReference = 801B20952CB363A10073E9E2 /* foqos.app */;
@@ -828,6 +831,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				8021D2462D61837E00A92114 /* XCRemoteSwiftPackageReference "CodeScanner" */,
+				A0B1C2D3E4F5060708090A01 /* XCRemoteSwiftPackageReference "supabase-swift" */,
 				F0B100022F90000100000001 /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -1882,6 +1886,14 @@
 				minimumVersion = 2.9.5;
 			};
 		};
+		A0B1C2D3E4F5060708090A01 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.20.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1894,6 +1906,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = F0B100022F90000100000001 /* XCRemoteSwiftPackageReference "Sparkle" */;
 			productName = Sparkle;
+		};
+		A0B1C2D3E4F5060708090A02 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A0B1C2D3E4F5060708090A01 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

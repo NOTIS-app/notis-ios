@@ -64,6 +64,14 @@ jobs:
           path: NOTIS-simulator.zip
           retention-days: 14
 
+      # Compile errors as annotations: readable on the run page and through the public API,
+      # without downloading the log (which needs a GitHub login).
+      - name: Show compile errors
+        if: failure()
+        run: |
+          grep -E "error: " build.log | sed "s|$GITHUB_WORKSPACE/||" | sort -u | head -40 \
+            | while IFS= read -r line; do echo "::error::$line"; done
+
       - name: Keep build log
         if: failure()
         uses: actions/upload-artifact@v4
