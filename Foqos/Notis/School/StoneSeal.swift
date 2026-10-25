@@ -70,6 +70,7 @@ enum StoneSeal {
 
   /// Why this tag can't be paired as an own stone, or nil when it can. A school stone never
   /// becomes an own stone: that is how a student would turn the stone of a room into theirs.
+  @MainActor
   static func pairingRefusal(_ result: NFCResult) -> String? {
     if result.seal == .school
       || (FeatureFlags.rooms && NotisSchool.shared.roomFor(uid: result.id) != nil)
