@@ -10,6 +10,8 @@ struct NotisHomeView: View {
 
   @EnvironmentObject private var requestAuthorizer: RequestAuthorizer
   @EnvironmentObject private var strategyManager: StrategyManager
+  /// Rooms: the school this phone joined, and a stone of a school to join.
+  @ObservedObject private var school = NotisSchool.shared
 
   /// No stone yet: the stone tap goes to "Mijn NOTIS" to pair one.
   var onPairFirstStone: () -> Void = {}
@@ -38,6 +40,16 @@ struct NotisHomeView: View {
 
   private var isLocked: Bool {
     strategyManager.isBlocking
+  }
+
+  private var isSchoolLocked: Bool {
+    strategyManager.activeSession?.blockedProfile.isNotisSchoolProfile == true
+  }
+
+  /// "met <steen>", or the room a school lock is checked in to.
+  private var lockingName: String? {
+    if isSchoolLocked { return school.roomName(for: school.currentRoomId) }
+    return strategyManager.activeSession?.blockedProfile.name
   }
 
   private var isAuthorized: Bool {
@@ -141,6 +153,23 @@ struct NotisHomeView: View {
       .presentationDetents([.medium, .large])
       .presentationBackground(NotisBrand.paper)
     }
+    .sheet(item: $school.pendingInvite) { invite in
+      NotisSchoolJoinSheet(
+        schoolName: invite.schoolName,
+        initialName: school.displayName,
+        onJoin: { name in
+          try await school.joinByStone(uid: invite.uid, displayName: name)
+          school.pendingInvite = nil
+          // The tap that brought up this sheet also locks, in that stone's room.
+          if let room = school.roomFor(uid: invite.uid) {
+            strategyManager.startNotisSchoolWithoutScan(context: context, room: room)
+          }
+        },
+        onCancel: { school.pendingInvite = nil }
+      )
+      .presentationDetents([.medium])
+      .presentationBackground(NotisBrand.paper)
+    }
     .alert(
       errorMessage ?? "",
       isPresented: Binding(
@@ -212,7 +241,7 @@ struct NotisHomeView: View {
           .foregroundStyle(palette.onSurface)
           .multilineTextAlignment(.center)
 
-        if isInkLocked, let name = strategyManager.activeSession?.blockedProfile.name {
+        if isInkLocked, let name = lockingName {
           Text("met \(name)")
             .font(.satoshi(18, .medium))
             .foregroundStyle(palette.primary)
@@ -322,20 +351,24 @@ struct NotisHomeView: View {
       return
     }
 
-    guard let anyStone = stones.first else {
+    // Rooms: also without own stones a tap scans, so a student can tap a school's stone.
+    let schoolRoute = FeatureFlags.rooms ? (try? BlockedProfiles.notisSchoolProfile(in: context)) : nil
+    let route = stones.first ?? schoolRoute
+    guard let route else {
       onPairFirstStone()
       return
     }
 
     showScanHint = true
-    // The scanned stone picks its own app list; `anyStone` only routes to the NOTIS strategy.
-    strategyManager.toggleBlocking(context: context, activeProfile: anyStone)
+    // The scanned stone picks its own app list; `route` only routes to the NOTIS strategy.
+    strategyManager.toggleBlocking(context: context, activeProfile: route)
   }
 
   private func startEmergencyUnlock() {
     guard let session = strategyManager.activeSession else { return }
     do {
       try NotisEmergencyUnlock.start(session: session, context: context)
+      if isSchoolLocked { Task { await school.report(.emergency) } }
     } catch {
       errorMessage = String(localized: "Noodontgrendeling lukte niet: \(error.localizedDescription)")
     }
@@ -349,12 +382,16 @@ struct NotisHomeView: View {
   private func resumeBlocking() {
     guard let session = strategyManager.activeSession else { return }
     NotisEmergencyUnlock.resume(session: session, context: context)
+    if isSchoolLocked { Task { await school.report(.locked) } }
     refresh()
   }
 
   private func refresh() {
     requestAuthorizer.refreshAuthorizationStatus()
     strategyManager.loadActiveSession(context: context)
+    if FeatureFlags.rooms {
+      school.appBecameActive(isSchoolLocked: isSchoolLocked, isEmergency: isEmergencyActive)
+    }
   }
 
   private func dismissError() {

@@ -119,6 +119,17 @@ class StrategyManager: ObservableObject {
     strategy.startWithoutScan(context: context, stone: stone)
   }
 
+  /// NOTIS rooms: right after joining a school by tapping one of its stones, lock in that
+  /// stone's room without asking for a second scan.
+  @MainActor
+  func startNotisSchoolWithoutScan(context: ModelContext, room: SchoolRoom) {
+    guard !isBlocking,
+      let strategy = getStrategy(id: NotisStoneBlockingStrategy.id, context: context)
+        as? NotisStoneBlockingStrategy
+    else { return }
+    strategy.lockSchool(context: context, room: room)
+  }
+
   /// NOTIS: cancel a lock within its grace period, without scanning a stone.
   func cancelNotisSessionInGracePeriod(context: ModelContext) {
     guard let session = activeSession,
