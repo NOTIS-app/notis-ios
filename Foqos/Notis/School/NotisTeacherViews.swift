@@ -1,20 +1,31 @@
 import SwiftUI
 
-/// Settings, "Ik ben docent": email + password. Teacher accounts are made by NOTIS. With
-/// [asAdmin] it is the hidden NOTIS admin login (seven taps on "Over NOTIS").
+/// Settings, "Ik ben docent" / "Ik ben ouder": email + password, as Android's `LoginDialog`.
+/// Teacher accounts are made by NOTIS; a parent can also create an account here. With role
+/// admin it is the hidden NOTIS admin login (seven taps on "Over NOTIS").
 struct NotisTeacherLoginSheet: View {
   @ObservedObject var teacher: NotisTeacher
-  var asAdmin = false
+  var role = NotisTeacher.AccountRole.teacher
   let onDone: () -> Void
 
   @State private var email = ""
   @State private var password = ""
+  @State private var isCreating = false
   @State private var isBusy = false
   @State private var errorText: String?
 
+  private var title: LocalizedStringKey {
+    if isCreating { return "Account aanmaken" }
+    switch role {
+    case .teacher: return "Inloggen als docent"
+    case .parent: return "Inloggen als ouder"
+    case .admin: return "Inloggen als NOTIS-beheerder"
+    }
+  }
+
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
-      Text(asAdmin ? "Inloggen als NOTIS-beheerder" : "Inloggen als docent")
+      Text(title)
         .font(.satoshi(22, .bold))
         .foregroundStyle(NotisBrand.ink)
       NotisTextField(title: "E-mailadres", text: $email, isSecure: false)
@@ -22,12 +33,29 @@ struct NotisTeacherLoginSheet: View {
         .keyboardType(.emailAddress)
         .textInputAutocapitalization(.never)
       NotisTextField(title: "Wachtwoord", text: $password, isSecure: true)
-        .textContentType(.password)
+        .textContentType(isCreating ? .newPassword : .password)
+      if isCreating {
+        Text("Minstens 6 tekens").font(.satoshi(13)).foregroundStyle(NotisBrand.inkSoft)
+      }
       if let errorText {
         Text(errorText).font(.satoshi(13)).foregroundStyle(.red)
       }
-      NotisPrimaryButton(title: "Inloggen", isBusy: isBusy, isEnabled: email.contains("@") && !password.isEmpty) {
-        Task { await signIn() }
+      NotisPrimaryButton(
+        title: isCreating ? String(localized: "Aanmaken") : String(localized: "Inloggen"),
+        isBusy: isBusy,
+        isEnabled: email.contains("@") && password.count >= (isCreating ? 6 : 1)
+      ) {
+        Task { await submit() }
+      }
+      if role == .parent {
+        Button(isCreating ? "Al een account? Inloggen" : "Nog geen account? Maak er een aan") {
+          isCreating.toggle()
+          errorText = nil
+        }
+        .font(.satoshi(15, .medium))
+        .foregroundStyle(NotisBrand.mandarinDark)
+        .frame(maxWidth: .infinity)
+        .disabled(isBusy)
       }
       Button("Annuleren", action: onDone)
         .font(.satoshi(15, .medium))
@@ -38,22 +66,42 @@ struct NotisTeacherLoginSheet: View {
     .padding(24)
   }
 
-  private func signIn() async {
+  private func submit() async {
     isBusy = true
     errorText = nil
     do {
-      try await teacher.signIn(email: email, password: password, asAdmin: asAdmin)
+      if isCreating {
+        try await teacher.signUpParent(email: email, password: password)
+      } else {
+        try await teacher.signIn(email: email, password: password, as: role)
+      }
       onDone()
-    } catch NotisTeacher.SignInError.notAdmin {
-      errorText = String(localized: "Dit is geen beheerdersaccount van NOTIS.")
-    } catch NotisTeacher.SignInError.notTeacher {
-      errorText = String(localized: "Dit is geen docentaccount. Docentaccounts worden door NOTIS aangemaakt.")
-    } catch NotisTeacher.SignInError.invalidLogin {
-      errorText = String(localized: "E-mailadres of wachtwoord klopt niet.")
+    } catch let error as NotisTeacher.SignInError {
+      errorText = Self.message(for: error)
     } catch {
-      errorText = String(localized: "Inloggen lukte niet. Controleer je internet.")
+      errorText = Self.message(for: .failed)
     }
     isBusy = false
+  }
+
+  /// Same texts as Android's `accountErrorText`.
+  static func message(for error: NotisTeacher.SignInError) -> String {
+    switch error {
+    case .invalidLogin: return String(localized: "E-mailadres of wachtwoord klopt niet.")
+    case .notTeacher:
+      return String(
+        localized:
+          "Dit is geen docentaccount. Ouders loggen in bij \"Ik ben ouder\". Docentaccounts worden door NOTIS aangemaakt."
+      )
+    case .notParent:
+      return String(localized: "Dit is een docentaccount. Gebruik een apart account om je eigen kind te volgen.")
+    case .notAdmin: return String(localized: "Dit is geen beheerdersaccount van NOTIS.")
+    case .emailTaken: return String(localized: "Er is al een account met dit e-mailadres. Log in.")
+    case .weakPassword: return String(localized: "Kies een langer wachtwoord (minstens 6 tekens).")
+    case .emailNotConfirmed:
+      return String(localized: "Dit e-mailadres is nog niet bevestigd. Vraag NOTIS om het account te activeren.")
+    case .failed: return String(localized: "Inloggen lukte niet. Controleer je internet.")
+    }
   }
 }
 

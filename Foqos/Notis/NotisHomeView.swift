@@ -457,7 +457,7 @@ struct NotisHomeView: View {
     guard let session = strategyManager.activeSession else { return }
     do {
       try NotisEmergencyUnlock.start(session: session, context: context)
-      if isSchoolLocked { Task { await school.report(.emergency) } }
+      Task { await school.report(.emergency) }
     } catch {
       errorMessage = String(localized: "Noodontgrendeling lukte niet: \(error.localizedDescription)")
     }
@@ -471,7 +471,7 @@ struct NotisHomeView: View {
   private func resumeBlocking() {
     guard let session = strategyManager.activeSession else { return }
     NotisEmergencyUnlock.resume(session: session, context: context)
-    if isSchoolLocked { Task { await school.report(.locked) } }
+    Task { await school.report(.locked) }
     refresh()
   }
 
@@ -479,7 +479,7 @@ struct NotisHomeView: View {
     requestAuthorizer.refreshAuthorizationStatus()
     strategyManager.loadActiveSession(context: context)
     if FeatureFlags.rooms {
-      school.appBecameActive(isSchoolLocked: isSchoolLocked, isEmergency: isEmergencyActive)
+      school.appBecameActive(isLocked: isLocked, isSchoolLocked: isSchoolLocked, isEmergency: isEmergencyActive)
     }
   }
 

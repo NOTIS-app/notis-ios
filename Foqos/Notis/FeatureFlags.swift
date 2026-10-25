@@ -34,9 +34,10 @@ enum FeatureFlags {
   /// Off for the first TestFlight test.
   static let schoolLive = false
 
-  /// Parent controls: a parent sets the app list for a child's phone. Off for the first
-  /// TestFlight test.
-  static let parentControls = false
+  /// Parents, as on Android: "Ouder koppelen" on a child's phone, "Ik ben ouder" to follow a
+  /// child's lock status and choose the apps of a child's Android phone. An iPhone can't share
+  /// its apps, so its parent only sees the status.
+  static let parentControls = true
 
   /// Rooms (stappenplan-lokalen.md): every classroom has a stone. Students join a school by
   /// tapping one of its stones and check in per room; a teacher taps the room's stone and sees

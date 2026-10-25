@@ -68,6 +68,13 @@ class NotisStoneBlockingStrategy: BlockingStrategy {
     try? context.save()
     NotisEmergencyUnlock.resetForNewSession()
     onSessionCreation?(.started(activeSession))
+    // A parent sees every lock; a school lock reports itself, with its room (lockSchool).
+    if !stone.isNotisSchoolProfile {
+      MainActor.assumeIsolated {
+        let school = NotisSchool.shared
+        Task { await school.report(.locked) }
+      }
+    }
   }
 
   func stopBlocking(
@@ -185,6 +192,11 @@ class NotisStoneBlockingStrategy: BlockingStrategy {
       MainActor.assumeIsolated {
         let school = NotisSchool.shared
         school.currentRoomId = nil
+        Task { await school.report(.unlocked) }
+      }
+    } else {
+      MainActor.assumeIsolated {
+        let school = NotisSchool.shared
         Task { await school.report(.unlocked) }
       }
     }

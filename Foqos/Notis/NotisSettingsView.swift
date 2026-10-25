@@ -16,9 +16,15 @@ struct NotisSettingsView: View {
   @ObservedObject private var school = NotisSchool.shared
   @ObservedObject private var teacher = NotisTeacher.shared
   @State private var showLeaveSchool = false
-  @State private var showTeacherLogin = false
+  /// The login sheet that is open: "Ik ben docent", "Ik ben ouder" or the hidden admin login.
+  @State private var loginRole: NotisTeacher.AccountRole?
+  @State private var showParentLink = false
+  @State private var unlinkingGuardian: LinkedGuardian?
+  @State private var children: [ChildStatus] = []
+  @State private var showAddChild = false
+  @State private var childApps: ChildStatus?
+  @State private var removingChild: ChildStatus?
   @State private var showRecoveryCode = false
-  @State private var showAdminLogin = false
   @State private var showStonePrepare = false
   @State private var showStoneLink = false
   /// Hidden NOTIS admin login: seven quick taps on "Over NOTIS", as on Android.
@@ -52,127 +58,52 @@ struct NotisSettingsView: View {
 
           notificationsCard
 
-          // Rooms: the school this phone joined by tapping one of its stones (8d).
-          if FeatureFlags.rooms, let joined = school.school {
+          // Same layout as Android: SCHOOL & OUDERS (StudentClassCard), then the account.
+          if FeatureFlags.rooms {
             Text("SCHOOL & OUDERS")
               .font(.satoshi(12, .bold))
               .tracking(1)
               .foregroundStyle(NotisBrand.inkSoft)
               .padding(.top, 4)
             SettingsCard {
-              SettingsRow(
-                icon: "graduationcap",
-                title: joined.name,
-                subtitle: String(localized: "Als \(school.displayName) · tik de steen van je lokaal om te locken"),
-                showsChevron: false
-              )
-              // No leaving during a school lock: that would be a way out of it.
-              if !isSchoolLocked {
+              // The school this phone joined by tapping one of its stones (8d).
+              if let joined = school.school {
                 SettingsRow(
-                  icon: "rectangle.portrait.and.arrow.right",
-                  title: String(localized: "Afmelden bij school"),
-                  action: { showLeaveSchool = true }
-                )
-              }
-            }
-          }
-
-          // NOTIS admins (hidden login): prepare stones, then link the school stones.
-          if FeatureFlags.rooms && teacher.isAdmin {
-            Text("BEHEER")
-              .font(.satoshi(12, .bold))
-              .tracking(1)
-              .foregroundStyle(NotisBrand.inkSoft)
-              .padding(.top, 4)
-            SettingsCard {
-              if FeatureFlags.sealedStones {
-                SettingsRow(
-                  icon: "checkmark.seal",
-                  title: String(localized: "Stenen voorbereiden"),
-                  subtitle: String(localized: "Nieuwe stenen verzegelen bij de productie, zodat alleen NOTIS-stenen werken"),
-                  action: { showStonePrepare = true }
-                )
-              }
-              SettingsRow(
-                icon: "wave.3.right",
-                title: String(localized: "Stenen koppelen"),
-                subtitle: String(localized: "De stenen van een school koppelen, lokaal na lokaal"),
-                action: { showStoneLink = true }
-              )
-              SettingsRow(
-                icon: "rectangle.portrait.and.arrow.right",
-                title: String(localized: "Uitloggen"),
-                subtitle: String(localized: "NOTIS-beheerder: \(teacher.email ?? "")"),
-                showsChevron: false,
-                action: { Task { await teacher.signOut() } }
-              )
-            }
-          }
-
-          // Rooms, teacher side (8e): sign in, then tap the room's stone on Home.
-          if FeatureFlags.rooms && !teacher.isAdmin {
-            Text("DOCENT")
-              .font(.satoshi(12, .bold))
-              .tracking(1)
-              .foregroundStyle(NotisBrand.inkSoft)
-              .padding(.top, 4)
-            SettingsCard {
-              if teacher.isTeacher {
-                SettingsRow(
-                  icon: "wave.3.right",
-                  title: String(localized: "Zie wie er gelocked is in je lokaal"),
-                  subtitle: String(
-                    localized:
-                      "Tik op Home op de steen van het lokaal waar je lesgeeft. Of houd de steen op Home ingedrukt en kies het lokaal."
-                  ),
+                  icon: "graduationcap",
+                  title: joined.name,
+                  subtitle: String(localized: "Als \(school.displayName) · tik de steen van je lokaal om te locken"),
                   showsChevron: false
                 )
-                SettingsRow(
-                  icon: "key",
-                  title: String(localized: "Herstelcode"),
-                  subtitle: String(localized: "Voor een leerling wiens telefoon op slot blijft"),
-                  action: { showRecoveryCode = true }
-                )
-                SettingsRow(
-                  icon: "rectangle.portrait.and.arrow.right",
-                  title: String(localized: "Uitloggen"),
-                  subtitle: String(localized: "Docent: \(teacher.email ?? "")"),
-                  showsChevron: false,
-                  action: { Task { await teacher.signOut() } }
-                )
-              } else {
-                SettingsRow(
-                  icon: "person.crop.square",
-                  title: String(localized: "Ik ben docent"),
-                  subtitle: String(localized: "Log in om je lokaal te zien"),
-                  action: { showTeacherLogin = true }
-                )
-              }
-            }
-          }
-
-          if FeatureFlags.schoolLive || FeatureFlags.parentControls {
-            Text("KLAS & OUDERS")
-              .font(.satoshi(12, .bold))
-              .tracking(1)
-              .foregroundStyle(NotisBrand.inkSoft)
-              .padding(.top, 4)
-            SettingsCard {
-              if FeatureFlags.schoolLive {
-                SettingsRow(
-                  icon: "person.3",
-                  title: String(localized: "Aansluiten bij een klas"),
-                  subtitle: String(localized: "Komt in een volgende testversie")
-                )
+                // No leaving during a school lock: that would be a way out of it.
+                if !isSchoolLocked {
+                  SettingsRow(
+                    icon: "rectangle.portrait.and.arrow.right",
+                    title: String(localized: "Afmelden bij school"),
+                    action: { showLeaveSchool = true }
+                  )
+                }
               }
               if FeatureFlags.parentControls {
+                // Always visible on the child's phone: who can see whether NOTIS is locked.
+                ForEach(school.guardians) { guardian in
+                  SettingsRow(
+                    icon: "figure.and.child.holdinghands",
+                    title: guardian.guardianEmail.isEmpty ? String(localized: "Ouder") : guardian.guardianEmail,
+                    subtitle: String(localized: "Kan zien of NOTIS gelocked is"),
+                    showsChevron: false,
+                    onRemove: { unlinkingGuardian = guardian }
+                  )
+                }
                 SettingsRow(
-                  icon: "figure.and.child.holdinghands",
+                  icon: "link",
                   title: String(localized: "Ouder koppelen"),
-                  subtitle: String(localized: "Komt in een volgende testversie")
+                  subtitle: school.guardians.isEmpty ? String(localized: "Laat een ouder zien of NOTIS gelocked is") : nil,
+                  action: { showParentLink = true }
                 )
               }
             }
+
+            accountCards
           }
 
           Text("SYSTEEM")
@@ -218,15 +149,70 @@ struct NotisSettingsView: View {
     .onAppear {
       requestAuthorizer.refreshAuthorizationStatus()
     }
-    .sheet(isPresented: $showTeacherLogin) {
-      NotisTeacherLoginSheet(teacher: teacher) { showTeacherLogin = false }
+    .sheet(item: $loginRole) { role in
+      NotisTeacherLoginSheet(teacher: teacher, role: role) { loginRole = nil }
+        .presentationDetents([.medium, .large])
+        .presentationBackground(NotisBrand.paper)
+    }
+    .sheet(isPresented: $showParentLink) {
+      NotisParentLinkSheet(school: school, isLocked: strategyManager.isBlocking) { showParentLink = false }
         .presentationDetents([.medium])
         .presentationBackground(NotisBrand.paper)
     }
-    .sheet(isPresented: $showAdminLogin) {
-      NotisTeacherLoginSheet(teacher: teacher, asAdmin: true) { showAdminLogin = false }
-        .presentationDetents([.medium])
-        .presentationBackground(NotisBrand.paper)
+    .sheet(isPresented: $showAddChild) {
+      NotisAddChildSheet { linked in
+        showAddChild = false
+        if linked { Task { await reloadChildren() } }
+      }
+      .presentationDetents([.medium, .large])
+      .presentationBackground(NotisBrand.paper)
+    }
+    .sheet(item: $childApps) { child in
+      NotisChildAppsSheet(child: child) { childApps = nil }
+    }
+    .alert(
+      String(localized: "Deze ouder ontkoppelen?"),
+      isPresented: Binding(get: { unlinkingGuardian != nil }, set: { if !$0 { unlinkingGuardian = nil } })
+    ) {
+      Button("Ontkoppelen", role: .destructive) {
+        if let guardian = unlinkingGuardian {
+          Task {
+            if await school.unlinkGuardian(guardian) {
+              await school.report(strategyManager.isBlocking ? .locked : .unlocked)
+            }
+          }
+        }
+      }
+      Button("Annuleren", role: .cancel) {}
+    } message: {
+      Text("Je ouder ziet dan niet meer of NOTIS gelocked is, en ziet dat je hebt ontkoppeld.")
+    }
+    .alert(
+      String(localized: "\(removingChild?.name ?? "") verwijderen?"),
+      isPresented: Binding(get: { removingChild != nil }, set: { if !$0 { removingChild = nil } })
+    ) {
+      Button("Verwijderen", role: .destructive) {
+        if let child = removingChild {
+          Task {
+            try? await NotisParent.shared.removeChild(child)
+            await reloadChildren()
+          }
+        }
+      }
+      Button("Annuleren", role: .cancel) {}
+    } message: {
+      Text("Je ziet dan niet meer of NOTIS op deze telefoon gelocked is. Opnieuw koppelen kan met een nieuwe code.")
+    }
+    // A parent follows their children's status while settings is open.
+    .task(id: teacher.role) {
+      guard teacher.isParent else {
+        children = []
+        return
+      }
+      while !Task.isCancelled {
+        await reloadChildren()
+        try? await Task.sleep(for: .seconds(10))
+      }
     }
     .fullScreenCover(isPresented: $showStonePrepare) {
       NotisStonePrepareView { showStonePrepare = false }
@@ -288,7 +274,133 @@ struct NotisSettingsView: View {
     lastAboutTap = now
     if aboutTaps >= 7 {
       aboutTaps = 0
-      showAdminLogin = true
+      loginRole = .admin
+    }
+  }
+
+  private func reloadChildren() async {
+    // Offline: keep the last list.
+    if let fresh = try? await NotisParent.shared.children() { children = fresh }
+  }
+
+  /// The account, as Android's `AccountSection`: signed out "Ik ben docent" and "Ik ben ouder";
+  /// signed in what the kind of account does, then signing out.
+  @ViewBuilder
+  private var accountCards: some View {
+    switch teacher.role {
+    case nil:
+      SettingsCard {
+        SettingsRow(
+          icon: "person.crop.square",
+          title: String(localized: "Ik ben docent"),
+          subtitle: String(localized: "Log in om je lokaal te zien"),
+          action: { loginRole = .teacher }
+        )
+        if FeatureFlags.parentControls {
+          SettingsRow(
+            icon: "figure.and.child.holdinghands",
+            title: String(localized: "Ik ben ouder"),
+            subtitle: String(localized: "Zie of NOTIS van je kind gelocked is"),
+            action: { loginRole = .parent }
+          )
+        }
+      }
+    case .teacher:
+      SettingsCard {
+        SettingsRow(
+          icon: "wave.3.right",
+          title: String(localized: "Zie wie er gelocked is in je lokaal"),
+          subtitle: String(
+            localized:
+              "Tik op Home op de steen van het lokaal waar je lesgeeft. Of houd de steen op Home ingedrukt en kies het lokaal."
+          ),
+          showsChevron: false
+        )
+        SettingsRow(
+          icon: "key",
+          title: String(localized: "Herstelcode"),
+          subtitle: String(localized: "Voor een leerling wiens telefoon op slot blijft"),
+          action: { showRecoveryCode = true }
+        )
+      }
+      signOutCard(String(localized: "Docent: \(teacher.email ?? "")"))
+    case .parent:
+      childrenCard
+      signOutCard(String(localized: "Ouder: \(teacher.email ?? "")"))
+    case .admin:
+      // NOTIS admins (hidden login): prepare stones, then link the school stones.
+      SettingsCard {
+        if FeatureFlags.sealedStones {
+          SettingsRow(
+            icon: "checkmark.seal",
+            title: String(localized: "Stenen voorbereiden"),
+            subtitle: String(localized: "Nieuwe stenen verzegelen bij de productie, zodat alleen NOTIS-stenen werken"),
+            action: { showStonePrepare = true }
+          )
+        }
+        SettingsRow(
+          icon: "wave.3.right",
+          title: String(localized: "Stenen koppelen"),
+          subtitle: String(localized: "De stenen van een school koppelen, lokaal na lokaal"),
+          action: { showStoneLink = true }
+        )
+      }
+      signOutCard(String(localized: "NOTIS-beheerder: \(teacher.email ?? "")"))
+    }
+  }
+
+  private func signOutCard(_ subtitle: String) -> some View {
+    SettingsCard {
+      SettingsRow(
+        icon: "rectangle.portrait.and.arrow.right",
+        title: String(localized: "Uitloggen"),
+        subtitle: subtitle,
+        showsChevron: false,
+        action: { Task { await teacher.signOut() } }
+      )
+    }
+  }
+
+  /// The parent's children with their live status, and adding a child with its link code.
+  private var childrenCard: some View {
+    SettingsCard {
+      ForEach(children) { child in
+        if let unlinkedAt = child.unlinkedAt {
+          SettingsRow(
+            icon: "link",
+            iconColor: NotisBrand.inkSoft,
+            title: child.name,
+            subtitle: String(
+              localized: "Ontkoppeld door je kind op \(unlinkedAt.formatted(date: .abbreviated, time: .shortened))"
+            ),
+            showsChevron: false,
+            onRemove: { removingChild = child }
+          )
+        } else if let visual = ChildStatusVisual(child: child, now: Date()) {
+          SettingsRow(
+            icon: visual.icon,
+            iconColor: visual.tint,
+            title: child.name,
+            subtitle: visual.subtitle,
+            action: FeatureFlags.allowList ? { childApps = child } : nil,
+            onRemove: { removingChild = child }
+          )
+        } else {
+          SettingsRow(
+            icon: "figure.and.child.holdinghands",
+            title: child.name,
+            subtitle: String(localized: "Gekoppeld · wacht op de eerste status"),
+            action: FeatureFlags.allowList ? { childApps = child } : nil,
+            onRemove: { removingChild = child }
+          )
+        }
+      }
+      SettingsRow(
+        icon: "person.badge.plus",
+        title: String(localized: "Kind toevoegen"),
+        subtitle: children.isEmpty ? String(localized: "Koppel met de telefoon van je kind via een code") : nil,
+        action: { showAddChild = true }
+      )
     }
   }
 
@@ -328,13 +440,14 @@ enum NotisNotifications {
 
 private struct SettingsIcon: View {
   let systemName: String
+  var color: Color = NotisBrand.mandarinDark
 
   var body: some View {
     Image(systemName: systemName)
       .font(.system(size: 18))
-      .foregroundStyle(NotisBrand.mandarinDark)
+      .foregroundStyle(color)
       .frame(width: 40, height: 40)
-      .background(NotisBrand.mandarinDark.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+      .background(color.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
   }
 }
 
@@ -352,12 +465,15 @@ private struct SettingsCard<Content: View>: View {
 /// Android's `SettingsRow`.
 private struct SettingsRow: View {
   let icon: String
+  var iconColor: Color = NotisBrand.mandarinDark
   let title: String
   var subtitle: String? = nil
   var subtitleColor: Color = NotisBrand.inkSoft
   var trailingSystemImage: String? = nil
   var showsChevron = true
   var action: (() -> Void)? = nil
+  /// A small cross at the end, as on Android (unlink a parent, remove a child).
+  var onRemove: (() -> Void)? = nil
 
   var body: some View {
     if let action {
@@ -370,7 +486,7 @@ private struct SettingsRow: View {
 
   private var row: some View {
     HStack(spacing: 12) {
-      SettingsIcon(systemName: icon)
+      SettingsIcon(systemName: icon, color: iconColor)
       VStack(alignment: .leading, spacing: 1) {
         Text(title)
           .font(.satoshi(16, .bold))
@@ -382,7 +498,16 @@ private struct SettingsRow: View {
         }
       }
       Spacer(minLength: 0)
-      if let trailingSystemImage {
+      if let onRemove {
+        Button(action: onRemove) {
+          Image(systemName: "xmark")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(NotisBrand.inkSoft)
+            .frame(width: 36, height: 36)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Verwijderen")
+      } else if let trailingSystemImage {
         Image(systemName: trailingSystemImage)
           .font(.system(size: 14))
           .foregroundStyle(NotisBrand.inkSoft)

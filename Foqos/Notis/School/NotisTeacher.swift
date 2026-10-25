@@ -34,64 +34,109 @@ struct RoomStudent: Identifiable, Equatable, Decodable {
 
 /// Teacher side of rooms (8e): signing in, tapping a room's stone (or picking the room) to see
 /// who is locked there, "Keuze openen" and the recovery code. Mirrors `RoomRepository.kt`
-/// and the teacher parts of `AccountRepository.kt` on Android. A NOTIS admin signs in on the
-/// same session through a hidden entry (seven taps on "Over NOTIS") and only prepares and
-/// links stones (`NotisAdmin`).
+/// and `AccountRepository.kt` on Android: the email + password account on this phone is a
+/// teacher, a parent ("Ik ben ouder", `NotisParent`) or a NOTIS admin, who signs in through a
+/// hidden entry (seven taps on "Over NOTIS") and only prepares and links stones (`NotisAdmin`).
+/// The kinds are separate: an account only signs in where its kind belongs.
 @MainActor
 final class NotisTeacher: ObservableObject {
   static let shared = NotisTeacher()
 
+  enum AccountRole: String, Identifiable {
+    var id: String { rawValue }
+
+    case teacher, parent, admin
+  }
+
   @Published private(set) var email: String?
-  @Published private(set) var isTeacher = false
-  /// Signed in as a NOTIS admin (`platform_admins`), never at the same time as a teacher.
-  @Published private(set) var isAdmin = false
+  @Published private(set) var role: AccountRole?
   /// The room whose live list is open (stone tapped or picked), or nil.
   @Published var openRoom: TeacherRoom?
+
+  var isTeacher: Bool { role == .teacher }
+  var isParent: Bool { role == .parent }
+  var isAdmin: Bool { role == .admin }
 
   private var client: SupabaseClient { SchoolBackend.accountClient }
 
   private init() {
     email = client.auth.currentUser?.email
-    isTeacher = UserDefaults.standard.bool(forKey: Self.isTeacherKey) && email != nil
-    isAdmin = UserDefaults.standard.bool(forKey: Self.isAdminKey) && email != nil
+    let defaults = UserDefaults.standard
+    // Before parents, only a teacher flag was kept.
+    let stored = defaults.string(forKey: Self.roleKey)
+      ?? (defaults.bool(forKey: Self.legacyTeacherKey) ? AccountRole.teacher.rawValue : nil)
+    role = email == nil ? nil : stored.flatMap(AccountRole.init(rawValue:))
   }
 
-  private static let isTeacherKey = "notis.teacher.isTeacher"
-  private static let isAdminKey = "notis.teacher.isAdmin"
+  private static let roleKey = "notis.account.role"
+  private static let legacyTeacherKey = "notis.teacher.isTeacher"
 
   enum SignInError: Error {
-    case invalidLogin, notTeacher, notAdmin, failed
+    case invalidLogin, notTeacher, notParent, notAdmin, emailTaken, weakPassword, emailNotConfirmed, failed
   }
 
-  /// Signs in; only teacher accounts are accepted here (parents sign in on Android only), or
-  /// with [asAdmin] only NOTIS admins. An admin can't sign in as a teacher, nor the other way.
-  func signIn(email: String, password: String, asAdmin: Bool = false) async throws {
+  /// Signs in, but only with an account of the [expected] kind; otherwise signs out again.
+  func signIn(email: String, password: String, as expected: AccountRole = .teacher) async throws {
     do {
       try await client.auth.signIn(email: email.trimmingCharacters(in: .whitespaces), password: password)
     } catch {
       throw "\(error)".localizedCaseInsensitiveContains("invalid") ? SignInError.invalidLogin : SignInError.failed
     }
-    let check = asAdmin ? "is_platform_admin" : "is_teacher"
-    let accepted: Bool = (try? await client.rpc(check).execute().value) ?? false
-    guard accepted else {
+    let actual = await currentRole()
+    guard actual == expected else {
       try? await client.auth.signOut()
-      throw asAdmin ? SignInError.notAdmin : SignInError.notTeacher
+      switch expected {
+      case .teacher: throw SignInError.notTeacher
+      case .parent: throw SignInError.notParent
+      case .admin: throw SignInError.notAdmin
+      }
     }
-    self.email = client.auth.currentUser?.email
-    isTeacher = !asAdmin
-    isAdmin = asAdmin
-    UserDefaults.standard.set(isTeacher, forKey: Self.isTeacherKey)
-    UserDefaults.standard.set(isAdmin, forKey: Self.isAdminKey)
+    setSignedIn(as: actual)
+  }
+
+  /// Creates a parent account; email confirmation is off for the pilot, so it signs in right
+  /// away. The "parent" mark keeps this account out of the teachers table for good.
+  func signUpParent(email: String, password: String) async throws {
+    do {
+      let response = try await client.auth.signUp(
+        email: email.trimmingCharacters(in: .whitespaces),
+        password: password,
+        data: ["role": .string("parent")]
+      )
+      // With "Confirm email" on in Supabase the account exists but has no session yet.
+      guard response.session != nil else { throw SignInError.emailNotConfirmed }
+    } catch let error as SignInError {
+      throw error
+    } catch {
+      let text = "\(error)"
+      if text.contains("already") || text.contains("user_already_exists") { throw SignInError.emailTaken }
+      if text.contains("weak_password") || text.contains("Password should be") { throw SignInError.weakPassword }
+      throw SignInError.failed
+    }
+    setSignedIn(as: .parent)
+  }
+
+  /// Teacher when listed in `teachers`, admin when in `platform_admins`, parent otherwise.
+  private func currentRole() async -> AccountRole {
+    let teacher: Bool = (try? await client.rpc("is_teacher").execute().value) ?? false
+    if teacher { return .teacher }
+    let admin: Bool = (try? await client.rpc("is_platform_admin").execute().value) ?? false
+    return admin ? .admin : .parent
+  }
+
+  private func setSignedIn(as newRole: AccountRole) {
+    email = client.auth.currentUser?.email
+    role = newRole
+    UserDefaults.standard.set(newRole.rawValue, forKey: Self.roleKey)
   }
 
   func signOut() async {
     try? await client.auth.signOut()
     email = nil
-    isTeacher = false
-    isAdmin = false
+    role = nil
     openRoom = nil
-    UserDefaults.standard.set(false, forKey: Self.isTeacherKey)
-    UserDefaults.standard.set(false, forKey: Self.isAdminKey)
+    UserDefaults.standard.removeObject(forKey: Self.roleKey)
+    UserDefaults.standard.set(false, forKey: Self.legacyTeacherKey)
   }
 
   // MARK: - Rooms

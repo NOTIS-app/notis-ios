@@ -41,6 +41,29 @@ struct SchoolStone: Codable, Equatable {
   }
 }
 
+/// A parent who follows this phone; shown on the child's phone so it always knows who.
+struct LinkedGuardian: Codable, Equatable, Identifiable {
+  let guardianUserId: String
+  let guardianEmail: String
+  var id: String { guardianUserId }
+
+  enum CodingKeys: String, CodingKey {
+    case guardianUserId = "guardian_user_id"
+    case guardianEmail = "guardian_email"
+  }
+}
+
+/// The code a parent enters to follow this phone; valid for 10 minutes.
+struct ParentLinkCode: Decodable, Equatable {
+  let code: String
+  let expiresAt: Date
+
+  enum CodingKeys: String, CodingKey {
+    case code
+    case expiresAt = "expires_at"
+  }
+}
+
 struct SchoolRoom: Equatable {
   let roomId: String
   let roomName: String
@@ -74,6 +97,11 @@ final class NotisSchool: ObservableObject {
   }
   /// Set when a stone of an unknown school was tapped; the home screen asks a name.
   @Published var pendingInvite: SchoolInvite?
+  /// Parents who follow this phone ("Ouder koppelen").
+  @Published private(set) var guardians: [LinkedGuardian] = []
+
+  /// A school or a parent follows this phone, so it reports its lock status.
+  var isLinked: Bool { school != nil || !guardians.isEmpty }
 
   private let defaults = UserDefaults.standard
   private var client: SupabaseClient { SchoolBackend.client }
@@ -85,6 +113,7 @@ final class NotisSchool: ObservableObject {
     static let chosenVersion = "notis.school.chosenListVersion"
     static let appCount = "notis.school.appCount"
     static let hasCategory = "notis.school.hasCategory"
+    static let guardians = "notis.school.guardians"
   }
 
   private init() {
@@ -92,6 +121,9 @@ final class NotisSchool: ObservableObject {
       school = try? JSONDecoder().decode(JoinedSchool.self, from: data)
     }
     currentRoomId = defaults.string(forKey: Keys.currentRoom)
+    if let data = defaults.data(forKey: Keys.guardians) {
+      guardians = (try? JSONDecoder().decode([LinkedGuardian].self, from: data)) ?? []
+    }
   }
 
   var displayName: String { defaults.string(forKey: Keys.displayName) ?? "" }
@@ -187,6 +219,58 @@ final class NotisSchool: ObservableObject {
     }
   }
 
+  // MARK: - Parents
+
+  private func setGuardians(_ list: [LinkedGuardian]) {
+    guardians = list
+    defaults.set(try? JSONEncoder().encode(list), forKey: Keys.guardians)
+  }
+
+  /// Re-reads which parents follow this phone. Keeps the last list when offline.
+  func refreshGuardians() async {
+    do {
+      let uid = try await SchoolBackend.ensureStudentSignedIn()
+      let rows: [LinkedGuardian] = try await client.from("guardians")
+        .select("guardian_user_id, guardian_email")
+        .eq("child_user_id", value: uid.uuidString)
+        .filter("unlinked_at", operator: "is", value: "null")
+        .execute().value
+      setGuardians(rows)
+    } catch {
+      print("NotisSchool refreshGuardians failed: \(error)")
+    }
+  }
+
+  /// A fresh code for a parent to enter; nil when offline.
+  func createLinkCode() async -> ParentLinkCode? {
+    do {
+      try await SchoolBackend.ensureStudentSignedIn()
+      let rows: [ParentLinkCode] = try await client.rpc("create_link_code").execute().value
+      return rows.first
+    } catch {
+      print("NotisSchool createLinkCode failed: \(error)")
+      return nil
+    }
+  }
+
+  private struct GuardianParams: Encodable {
+    let p_guardian_user_id: String
+  }
+
+  /// Stops a parent from following this phone; the parent sees it as unlinked.
+  func unlinkGuardian(_ guardian: LinkedGuardian) async -> Bool {
+    do {
+      try await SchoolBackend.ensureStudentSignedIn()
+      try await client.rpc("unlink_guardian", params: GuardianParams(p_guardian_user_id: guardian.guardianUserId))
+        .execute()
+      setGuardians(guardians.filter { $0.guardianUserId != guardian.guardianUserId })
+      return true
+    } catch {
+      print("NotisSchool unlinkGuardian failed: \(error)")
+      return false
+    }
+  }
+
   // MARK: - App choice (8c)
 
   /// The teacher pressed "Keuze openen" for the room this phone is checked in to.
@@ -272,7 +356,7 @@ final class NotisSchool: ObservableObject {
   /// the check-in on unlock). Failures are left for the next report: iOS can't retry in the
   /// background the way Android's WorkManager does.
   func report(_ state: StudentState) async {
-    guard school != nil else { return }
+    guard isLinked else { return }
     let roomId = state == .locked ? currentRoomId : nil
     // The app check (8c): how many apps the student allowed, whether a whole category, and
     // for which version of the school's list. Only once the student has chosen.
@@ -294,14 +378,19 @@ final class NotisSchool: ObservableObject {
 
   /// The app came to the foreground: the only moment iOS reliably lets it talk to the server.
   /// Reports the current state (it doubles as "last seen"), ends a check-in whose lock ended
-  /// in the background (the end time), and picks up changes to the school.
-  func appBecameActive(isSchoolLocked: Bool, isEmergency: Bool) {
-    guard school != nil else { return }
+  /// in the background (the end time), and picks up changes to the school and the parents.
+  /// [isLocked] counts every lock (a parent sees own stones too), [isSchoolLocked] only the
+  /// school's.
+  func appBecameActive(isLocked: Bool, isSchoolLocked: Bool, isEmergency: Bool) {
+    guard isLinked else { return }
     if !isSchoolLocked && currentRoomId != nil { currentRoomId = nil }
-    let state: StudentState = isSchoolLocked ? (isEmergency ? .emergency : .locked) : .unlocked
+    let state: StudentState = isLocked ? (isEmergency ? .emergency : .locked) : .unlocked
     Task {
-      await refreshSchool()
-      await refreshChoiceOpen()
+      await refreshGuardians()
+      if school != nil {
+        await refreshSchool()
+        await refreshChoiceOpen()
+      }
       await report(state)
     }
   }
