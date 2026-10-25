@@ -15,8 +15,11 @@ struct RoomStudent: Identifiable, Equatable, Decodable {
   let stateChangedAt: Date
   let lastSeen: Date
   let tooMany: Bool
+  let platform: String?
 
   var id: String { userId }
+  /// iPhones can't report in the background, so silence doesn't mean "geen contact".
+  var isIphone: Bool { platform == "ios" }
 
   enum CodingKeys: String, CodingKey {
     case userId = "user_id"
@@ -25,6 +28,7 @@ struct RoomStudent: Identifiable, Equatable, Decodable {
     case stateChangedAt = "state_changed_at"
     case lastSeen = "last_seen"
     case tooMany = "too_many"
+    case platform
   }
 }
 

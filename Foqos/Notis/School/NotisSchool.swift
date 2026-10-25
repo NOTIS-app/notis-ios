@@ -264,6 +264,8 @@ final class NotisSchool: ObservableObject {
     let p_app_count: Int?
     let p_has_category: Bool?
     let p_list_version: Int?
+    /// iOS can't report in the background: teachers see "laatst gezien" instead of "geen contact".
+    let p_platform: String = "ios"
   }
 
   /// Reports the lock state; a lock in a room also checks in to that room (the server ends

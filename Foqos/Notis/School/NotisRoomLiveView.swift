@@ -19,8 +19,13 @@ struct NotisRoomLiveView: View {
     case unlocked = 0, emergency, noContact, locked
   }
 
+  private func isStale(_ student: RoomStudent, now: Date) -> Bool {
+    now.timeIntervalSince(student.lastSeen) > Self.staleAfter
+  }
+
   private func kind(_ student: RoomStudent, now: Date) -> Kind {
-    if now.timeIntervalSince(student.lastSeen) > Self.staleAfter { return .noContact }
+    // An iPhone can't report in the background: its last state stands ("laatst gezien").
+    if !student.isIphone && isStale(student, now: now) { return .noContact }
     switch student.state {
     case "locked": return .locked
     case "emergency": return .emergency
@@ -169,6 +174,11 @@ struct NotisRoomLiveView: View {
         Text(subtitle)
           .font(.satoshi(13))
           .foregroundStyle(kind == .emergency ? Color(hex: 0xE0A030) : NotisBrand.inkSoft)
+        if student.isIphone && isStale(student, now: Date()) {
+          Text("iPhone · laatst gezien \(student.lastSeen.formatted(date: .omitted, time: .shortened))")
+            .font(.satoshi(13))
+            .foregroundStyle(NotisBrand.inkSoft)
+        }
         if student.tooMany {
           Text("Meer apps gekozen dan toegestaan")
             .font(.satoshi(13))
