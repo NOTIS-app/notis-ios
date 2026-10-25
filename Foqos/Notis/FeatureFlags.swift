@@ -42,6 +42,12 @@ enum FeatureFlags {
   /// tapping one of its stones and check in per room; a teacher taps the room's stone and sees
   /// who is locked. Mirrors `FeatureFlags.ROOMS` on Android. Replaces `schoolLive`'s classes.
   static let rooms = true
+
+  /// Only NOTIS stones: an own stone pairs only with a valid seal of a personal stone
+  /// ([StoneSeal]). Stones paired before keep working. Off: any NFC chip pairs, as before. A
+  /// school stone never pairs as an own stone, with or without this flag.
+  /// Mirrors `FeatureFlags.SEALED_STONES` on Android.
+  static let sealedStones = true
 }
 
 enum NotisDevice {

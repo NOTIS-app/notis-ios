@@ -163,8 +163,14 @@ struct MijnNotisView: View {
 
   private func startPairing() {
     scanner.onTagScanned = { result in
+      scanner.resultErrorMessage = nil
       if let existing = BlockedProfiles.findNotisStone(withTag: result.id, in: context) {
         errorMessage = String(localized: "Deze NOTIS is al gekoppeld: \(existing.name)")
+        return
+      }
+      if let refusal = StoneSeal.pairingRefusal(result) {
+        scanner.resultErrorMessage = refusal
+        errorMessage = refusal
         return
       }
       isPairingSuccess = true

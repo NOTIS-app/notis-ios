@@ -359,8 +359,14 @@ struct NotisOnboardingView: View {
   private func startPairing() {
     guard !isPairingSuccess else { return }
     scanner.onTagScanned = { result in
+      let isPaired = BlockedProfiles.findNotisStone(withTag: result.id, in: context) != nil
+      if !isPaired, let refusal = StoneSeal.pairingRefusal(result) {
+        scanner.resultErrorMessage = refusal
+        errorMessage = refusal
+        return
+      }
       do {
-        if BlockedProfiles.findNotisStone(withTag: result.id, in: context) == nil {
+        if !isPaired {
           _ = try BlockedProfiles.createNotisStone(
             in: context,
             name: String(localized: "Mijn NOTIS"),

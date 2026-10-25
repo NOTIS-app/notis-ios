@@ -5,6 +5,8 @@ struct NFCResult: Equatable {
   var id: String
   var url: String?
   var DateScanned: Date
+  /// The kind the stone's NOTIS seal proves ([StoneSeal]), nil without a valid seal.
+  var seal: StoneKind? = nil
 }
 
 class NFCScannerUtil: NSObject {
@@ -31,7 +33,7 @@ class NFCScannerUtil: NSObject {
     #if targetEnvironment(simulator)
       // No NFC in the simulator: act as if a stone was scanned, so the screens can be tried out.
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-        self.onTagScanned?(NFCResult(id: "51A1A7020000", url: nil, DateScanned: Date()))
+        self.onTagScanned?(NFCResult(id: "51A1A7020000", url: nil, DateScanned: Date(), seal: .personal))
         if let error = self.resultErrorMessage {
           self.onError?(error)
         }
@@ -157,9 +159,11 @@ extension NFCScannerUtil: NFCTagReaderSessionDelegate {
       }
 
       let url = self.updateWithNDEFMessageURL(message!)
+      let id = tag.identifier.hexEncodedString()
       self.handleTagData(
-        id: tag.identifier.hexEncodedString(),
+        id: id,
         url: url,
+        seal: StoneSeal.kind(uid: id, message: message),
         session: session
       )
     }
@@ -185,9 +189,11 @@ extension NFCScannerUtil: NFCTagReaderSessionDelegate {
       }
 
       let url = self.updateWithNDEFMessageURL(message!)
+      let id = tag.identifier.hexEncodedString()
       self.handleTagData(
-        id: tag.identifier.hexEncodedString(),
+        id: id,
         url: url,
+        seal: StoneSeal.kind(uid: id, message: message),
         session: session
       )
     }
@@ -202,8 +208,10 @@ extension NFCScannerUtil: NFCTagReaderSessionDelegate {
     )
   }
 
-  private func handleTagData(id: String, url: String?, session: NFCTagReaderSession) {
-    let result = NFCResult(id: id, url: url, DateScanned: Date())
+  private func handleTagData(
+    id: String, url: String?, seal: StoneKind? = nil, session: NFCTagReaderSession
+  ) {
+    let result = NFCResult(id: id, url: url, DateScanned: Date(), seal: seal)
 
     DispatchQueue.main.async {
       self.onTagScanned?(result)
