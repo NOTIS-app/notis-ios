@@ -1,8 +1,10 @@
 import SwiftUI
 
-/// Settings, "Ik ben docent": email + password. Teacher accounts are made by NOTIS.
+/// Settings, "Ik ben docent": email + password. Teacher accounts are made by NOTIS. With
+/// [asAdmin] it is the hidden NOTIS admin login (seven taps on "Over NOTIS").
 struct NotisTeacherLoginSheet: View {
   @ObservedObject var teacher: NotisTeacher
+  var asAdmin = false
   let onDone: () -> Void
 
   @State private var email = ""
@@ -12,7 +14,7 @@ struct NotisTeacherLoginSheet: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
-      Text("Inloggen als docent")
+      Text(asAdmin ? "Inloggen als NOTIS-beheerder" : "Inloggen als docent")
         .font(.satoshi(22, .bold))
         .foregroundStyle(NotisBrand.ink)
       NotisTextField(title: "E-mailadres", text: $email, isSecure: false)
@@ -40,8 +42,10 @@ struct NotisTeacherLoginSheet: View {
     isBusy = true
     errorText = nil
     do {
-      try await teacher.signIn(email: email, password: password)
+      try await teacher.signIn(email: email, password: password, asAdmin: asAdmin)
       onDone()
+    } catch NotisTeacher.SignInError.notAdmin {
+      errorText = String(localized: "Dit is geen beheerdersaccount van NOTIS.")
     } catch NotisTeacher.SignInError.notTeacher {
       errorText = String(localized: "Dit is geen docentaccount. Docentaccounts worden door NOTIS aangemaakt.")
     } catch NotisTeacher.SignInError.invalidLogin {

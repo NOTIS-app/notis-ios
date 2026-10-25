@@ -16,7 +16,8 @@ enum StoneKind: UInt8 {
 /// copied seal is worthless on another chip, because the hash comes from the chip's own UID.
 ///
 /// Payload: version (1) | kind ("P" or "S") | signature (64 bytes, r || s).
-/// Same format and key as `StoneSeal.kt` on Android, where NOTIS admins prepare the stones.
+/// Same format and key as `StoneSeal.kt` on Android. NOTIS admins prepare stones on both
+/// (`NotisStoneWriter`).
 enum StoneSeal {
   private static let recordType = "notisapp.nl:stone"
   private static let version: UInt8 = 1
@@ -38,6 +39,22 @@ enum StoneSeal {
       })
     else { return nil }
     return verify(uid: uid, payload: record.payload)
+  }
+
+  static func payload(kind: StoneKind, signature: Data) -> Data {
+    Data([version, kind.rawValue]) + signature
+  }
+
+  /// What production writes on a stone: the seal first, so Android routes the stone to NOTIS,
+  /// then Android's app record, so it is NOTIS that opens there. Same bytes as on Android.
+  static func ndefMessage(payload: Data) -> NFCNDEFMessage {
+    NFCNDEFMessage(records: [
+      NFCNDEFPayload(format: .nfcExternal, type: Data(recordType.utf8), identifier: Data(), payload: payload),
+      NFCNDEFPayload(
+        format: .nfcExternal, type: Data("android.com:pkg".utf8), identifier: Data(),
+        payload: Data("nl.notisapp.android".utf8)
+      ),
+    ])
   }
 
   static func verify(uid: String, payload: Data) -> StoneKind? {

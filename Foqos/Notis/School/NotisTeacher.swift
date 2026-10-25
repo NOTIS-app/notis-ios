@@ -34,14 +34,17 @@ struct RoomStudent: Identifiable, Equatable, Decodable {
 
 /// Teacher side of rooms (8e): signing in, tapping a room's stone (or picking the room) to see
 /// who is locked there, "Keuze openen" and the recovery code. Mirrors `RoomRepository.kt`
-/// and the teacher parts of `AccountRepository.kt` on Android. Stone linking (NOTIS admins)
-/// stays Android-only.
+/// and the teacher parts of `AccountRepository.kt` on Android. A NOTIS admin signs in on the
+/// same session through a hidden entry (seven taps on "Over NOTIS") and only prepares and
+/// links stones (`NotisAdmin`).
 @MainActor
 final class NotisTeacher: ObservableObject {
   static let shared = NotisTeacher()
 
   @Published private(set) var email: String?
   @Published private(set) var isTeacher = false
+  /// Signed in as a NOTIS admin (`platform_admins`), never at the same time as a teacher.
+  @Published private(set) var isAdmin = false
   /// The room whose live list is open (stone tapped or picked), or nil.
   @Published var openRoom: TeacherRoom?
 
@@ -50,37 +53,45 @@ final class NotisTeacher: ObservableObject {
   private init() {
     email = client.auth.currentUser?.email
     isTeacher = UserDefaults.standard.bool(forKey: Self.isTeacherKey) && email != nil
+    isAdmin = UserDefaults.standard.bool(forKey: Self.isAdminKey) && email != nil
   }
 
   private static let isTeacherKey = "notis.teacher.isTeacher"
+  private static let isAdminKey = "notis.teacher.isAdmin"
 
   enum SignInError: Error {
-    case invalidLogin, notTeacher, failed
+    case invalidLogin, notTeacher, notAdmin, failed
   }
 
-  /// Signs in; only teacher accounts are accepted here (parents sign in on Android only).
-  func signIn(email: String, password: String) async throws {
+  /// Signs in; only teacher accounts are accepted here (parents sign in on Android only), or
+  /// with [asAdmin] only NOTIS admins. An admin can't sign in as a teacher, nor the other way.
+  func signIn(email: String, password: String, asAdmin: Bool = false) async throws {
     do {
       try await client.auth.signIn(email: email.trimmingCharacters(in: .whitespaces), password: password)
     } catch {
       throw "\(error)".localizedCaseInsensitiveContains("invalid") ? SignInError.invalidLogin : SignInError.failed
     }
-    let teacher: Bool = (try? await client.rpc("is_teacher").execute().value) ?? false
-    guard teacher else {
+    let check = asAdmin ? "is_platform_admin" : "is_teacher"
+    let accepted: Bool = (try? await client.rpc(check).execute().value) ?? false
+    guard accepted else {
       try? await client.auth.signOut()
-      throw SignInError.notTeacher
+      throw asAdmin ? SignInError.notAdmin : SignInError.notTeacher
     }
     self.email = client.auth.currentUser?.email
-    isTeacher = true
-    UserDefaults.standard.set(true, forKey: Self.isTeacherKey)
+    isTeacher = !asAdmin
+    isAdmin = asAdmin
+    UserDefaults.standard.set(isTeacher, forKey: Self.isTeacherKey)
+    UserDefaults.standard.set(isAdmin, forKey: Self.isAdminKey)
   }
 
   func signOut() async {
     try? await client.auth.signOut()
     email = nil
     isTeacher = false
+    isAdmin = false
     openRoom = nil
     UserDefaults.standard.set(false, forKey: Self.isTeacherKey)
+    UserDefaults.standard.set(false, forKey: Self.isAdminKey)
   }
 
   // MARK: - Rooms

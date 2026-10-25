@@ -18,6 +18,12 @@ struct NotisSettingsView: View {
   @State private var showLeaveSchool = false
   @State private var showTeacherLogin = false
   @State private var showRecoveryCode = false
+  @State private var showAdminLogin = false
+  @State private var showStonePrepare = false
+  @State private var showStoneLink = false
+  /// Hidden NOTIS admin login: seven quick taps on "Over NOTIS", as on Android.
+  @State private var aboutTaps = 0
+  @State private var lastAboutTap = Date.distantPast
 
   private var isSchoolLocked: Bool {
     strategyManager.activeSession?.blockedProfile.isNotisSchoolProfile == true
@@ -71,8 +77,40 @@ struct NotisSettingsView: View {
             }
           }
 
+          // NOTIS admins (hidden login): prepare stones, then link the school stones.
+          if FeatureFlags.rooms && teacher.isAdmin {
+            Text("BEHEER")
+              .font(.satoshi(12, .bold))
+              .tracking(1)
+              .foregroundStyle(NotisBrand.inkSoft)
+              .padding(.top, 4)
+            SettingsCard {
+              if FeatureFlags.sealedStones {
+                SettingsRow(
+                  icon: "checkmark.seal",
+                  title: String(localized: "Stenen voorbereiden"),
+                  subtitle: String(localized: "Nieuwe stenen verzegelen bij de productie, zodat alleen NOTIS-stenen werken"),
+                  action: { showStonePrepare = true }
+                )
+              }
+              SettingsRow(
+                icon: "wave.3.right",
+                title: String(localized: "Stenen koppelen"),
+                subtitle: String(localized: "De stenen van een school koppelen, lokaal na lokaal"),
+                action: { showStoneLink = true }
+              )
+              SettingsRow(
+                icon: "rectangle.portrait.and.arrow.right",
+                title: String(localized: "Uitloggen"),
+                subtitle: String(localized: "NOTIS-beheerder: \(teacher.email ?? "")"),
+                showsChevron: false,
+                action: { Task { await teacher.signOut() } }
+              )
+            }
+          }
+
           // Rooms, teacher side (8e): sign in, then tap the room's stone on Home.
-          if FeatureFlags.rooms {
+          if FeatureFlags.rooms && !teacher.isAdmin {
             Text("DOCENT")
               .font(.satoshi(12, .bold))
               .tracking(1)
@@ -163,13 +201,15 @@ struct NotisSettingsView: View {
             )
           }
 
-          // "Over NOTIS" stands on its own, without a card, as on Android.
+          // "Over NOTIS" stands on its own, without a card, as on Android. Seven quick taps open
+          // the NOTIS admin login; nothing on screen gives it away.
           SettingsRow(
             icon: "info.circle",
             title: String(localized: "Over NOTIS"),
             subtitle: appVersion,
             showsChevron: false
           )
+          .onTapGesture(perform: tapAbout)
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 104)
@@ -182,6 +222,17 @@ struct NotisSettingsView: View {
       NotisTeacherLoginSheet(teacher: teacher) { showTeacherLogin = false }
         .presentationDetents([.medium])
         .presentationBackground(NotisBrand.paper)
+    }
+    .sheet(isPresented: $showAdminLogin) {
+      NotisTeacherLoginSheet(teacher: teacher, asAdmin: true) { showAdminLogin = false }
+        .presentationDetents([.medium])
+        .presentationBackground(NotisBrand.paper)
+    }
+    .fullScreenCover(isPresented: $showStonePrepare) {
+      NotisStonePrepareView { showStonePrepare = false }
+    }
+    .fullScreenCover(isPresented: $showStoneLink) {
+      NotisStoneLinkView { showStoneLink = false }
     }
     .sheet(isPresented: $showRecoveryCode) {
       NotisRecoveryCodeRevealSheet(teacher: teacher) { showRecoveryCode = false }
@@ -228,6 +279,17 @@ struct NotisSettingsView: View {
     .padding(14)
     .frame(maxWidth: .infinity, minHeight: 130, alignment: .topLeading)
     .notisCard()
+  }
+
+  private func tapAbout() {
+    guard FeatureFlags.rooms, teacher.email == nil else { return }
+    let now = Date()
+    aboutTaps = now.timeIntervalSince(lastAboutTap) < 1.5 ? aboutTaps + 1 : 1
+    lastAboutTap = now
+    if aboutTaps >= 7 {
+      aboutTaps = 0
+      showAdminLogin = true
+    }
   }
 
   private func openPermissions() {
