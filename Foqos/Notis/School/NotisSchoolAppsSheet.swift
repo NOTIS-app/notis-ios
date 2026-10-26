@@ -37,9 +37,21 @@ struct NotisSchoolAppsSheet: View {
       if !schoolApps.isEmpty {
         VStack(alignment: .leading, spacing: 8) {
           ForEach(schoolApps, id: \.name) { app in
-            Label(app.name, systemImage: "checkmark.circle")
-              .font(.satoshi(16, .medium))
-              .foregroundStyle(NotisBrand.ink)
+            // The icon makes the app easy to find in Apple's picker next to this list.
+            HStack(spacing: 10) {
+              AsyncImage(url: app.icon.flatMap(URL.init(string:))) { image in
+                image.resizable().scaledToFit()
+              } placeholder: {
+                Image(systemName: "checkmark.circle")
+                  .font(.system(size: 18))
+                  .foregroundStyle(NotisBrand.mandarinDark)
+              }
+              .frame(width: 28, height: 28)
+              .clipShape(RoundedRectangle(cornerRadius: 7))
+              Text(app.name)
+                .font(.satoshi(16, .medium))
+                .foregroundStyle(NotisBrand.ink)
+            }
           }
         }
         .padding(16)

@@ -27,6 +27,9 @@ struct JoinedSchool: Codable, Equatable {
 struct SchoolApp: Codable, Equatable {
   let name: String
   let android: String?
+  /// App Store bundle ID and icon, from the app catalogue on the admin page.
+  var ios: String? = nil
+  var icon: String? = nil
 }
 
 struct SchoolStone: Codable, Equatable {
