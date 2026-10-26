@@ -5,7 +5,7 @@ op de NOTIS-steen van het lokaal; de telefoon gaat dan op slot, met alleen de ap
 toestaat. Na de les ontgrendelt de leerling op dezelfde steen. De docent ziet wie er in het lokaal
 gelocked is.
 
-Meer informatie: [notisapp.nl](https://notisapp.nl) · contact: info@notisapp.nl ·
+Meer informatie: [notisapp.nl](https://notisapp.nl) · contact: notisapp.info@gmail.com ·
 [privacyverklaring](https://notisapp.nl/privacy.html)
 
 ## Hoe het werkt
