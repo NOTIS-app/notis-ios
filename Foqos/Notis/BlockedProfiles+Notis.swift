@@ -2,8 +2,10 @@ import FamilyControls
 import Foundation
 import SwiftData
 
-/// A NOTIS stone is a profile with exactly one NFC unblock item: the stone's tag UID. The UID
-/// is the same uppercase hex string the Android app stores, so a stone works on both phones.
+/// A NOTIS stone is an NFC unblock item of a profile: the stone's tag UID. The UID is the same
+/// uppercase hex string the Android app stores, so a stone works on both phones. Without
+/// `FeatureFlags.stoneProfiles` every stone is a profile of its own with exactly one such item;
+/// with it, a profile holds the stones that start it (`BlockedProfiles+NotisProfiles.swift`).
 extension BlockedProfiles {
   var notisStoneTag: String? {
     physicalUnblockItems?.first { $0.type == .nfc }?.codeValue
@@ -35,8 +37,11 @@ extension BlockedProfiles {
     return profiles.filter(\.isNotisStone)
   }
 
+  /// The profile the stone with [tag] starts.
   static func findNotisStone(withTag tag: String, in context: ModelContext) -> BlockedProfiles? {
-    fetchNotisStones(in: context).first { $0.notisStoneTag == tag }
+    fetchNotisStones(in: context).first { profile in
+      profile.physicalUnblockItems?.contains { $0.type == .nfc && $0.codeValue == tag } == true
+    }
   }
 
   static func createNotisStone(

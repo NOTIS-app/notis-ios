@@ -39,8 +39,15 @@ struct NotisHomeView: View {
   @AppStorage(NotisEmergencyUnlock.remainingKey) private var emergencyRemaining: Int =
     NotisEmergencyUnlock.maxPerSession
 
+  /// The profiles with at least one stone (without `FeatureFlags.stoneProfiles`: the stones).
   private var stones: [BlockedProfiles] {
     profiles.filter(\.isNotisStone)
+  }
+
+  /// What the long-press offers: the profiles (you need a stone to unlock), or the stones.
+  private var lockChoices: [BlockedProfiles] {
+    guard FeatureFlags.stoneProfiles else { return stones }
+    return stones.isEmpty ? [] : profiles.filter(\.isNotisProfile)
   }
 
   private var isLocked: Bool {
@@ -151,7 +158,7 @@ struct NotisHomeView: View {
       .presentationBackground(NotisBrand.paper)
     }
     .sheet(isPresented: $showLockFromAppSheet) {
-      NotisLockFromAppSheet(stones: stones) { stone in
+      NotisLockFromAppSheet(choices: lockChoices) { stone in
         showLockFromAppSheet = false
         strategyManager.startNotisStoneWithoutScan(context: context, stone: stone)
       }
@@ -337,7 +344,11 @@ struct NotisHomeView: View {
             .foregroundStyle(showScanHint ? palette.primary : palette.onSurfaceVariant.opacity(0.6))
             .multilineTextAlignment(.center)
           if canChooseStone && !stones.isEmpty && !showScanHint {
-            Text("Of houd de steen ingedrukt om er een te kiezen")
+            Text(
+              FeatureFlags.stoneProfiles
+                ? "Of houd de steen ingedrukt om een profiel te kiezen"
+                : "Of houd de steen ingedrukt om er een te kiezen"
+            )
               .font(.satoshi(14))
               .foregroundStyle(palette.onSurfaceVariant.opacity(0.6))
               .multilineTextAlignment(.center)

@@ -424,7 +424,7 @@ enum NotisNotifications {
   }
 
   static func apply(_ isOn: Bool, context: ModelContext, strategyManager: StrategyManager) {
-    for stone in BlockedProfiles.fetchNotisStones(in: context) {
+    for stone in BlockedProfiles.fetchNotisProfiles(in: context) {
       stone.enableLiveActivity = isOn
       BlockedProfiles.updateSnapshot(for: stone)
     }

@@ -142,8 +142,9 @@ beta-review.
 
 - Beginscherm met de grote NOTIS-steen. Tik erop, houd je iPhone bij een gekoppelde steen en je
   apps gaan op slot. Elke gekoppelde steen ontgrendelt weer.
-- *Mijn NOTIS*: stenen koppelen, hernoemen en verwijderen. Per steen kies je de apps die bruikbaar
-  blijven, en je kunt de selectie van een andere steen kopiëren.
+- *Mijn NOTIS*: profielen maken (een naam en de apps die bruikbaar blijven), hernoemen en
+  verwijderen; stenen koppelen, hernoemen en verwijderen, en per steen kiezen welk profiel hij start.
+- Houd de steen op het beginscherm ingedrukt om met een profiel op slot te gaan zonder te scannen.
 - Noodontgrendeling zoals op Android: houd de steen lang ingedrukt en je krijgt 5 minuten
   toegang, 2× per sessie. Daarna gaat alles vanzelf weer op slot, ook als de app dicht is.
   Met *Blokkeren hervatten* stop je eerder.

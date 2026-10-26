@@ -49,6 +49,12 @@ enum FeatureFlags {
   /// school stone never pairs as an own stone, with or without this flag.
   /// Mirrors `FeatureFlags.SEALED_STONES` on Android.
   static let sealedStones = true
+
+  /// Profiles apart from stones: a profile is a named list of allowed apps. "Mijn NOTIS" lists
+  /// the profiles (create, rename, choose apps, delete) and the stones; each stone starts the
+  /// profile chosen for it, and the home long-press picks a profile. Off: each stone has its own
+  /// app list, as before. Mirrors `FeatureFlags.STONE_PROFILES` on Android.
+  static let stoneProfiles = true
 }
 
 enum NotisDevice {

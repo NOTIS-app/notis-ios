@@ -312,23 +312,30 @@ struct NotisOnboardingView: View {
   // MARK: - Pair later
 
   /// Android's `PairLaterPage`: how to pair a stone in "Mijn NOTIS", in three steps, then
-  /// "Aan de slag" goes home.
+  /// "Aan de slag" goes home. With `FeatureFlags.stoneProfiles`: make a profile, pair a stone,
+  /// choose the profile it starts.
   private var pairLater: some View {
     VStack(spacing: 0) {
       Spacer()
 
       NotisStoneView(isLocked: false, width: 180)
 
-      Text("Zo koppel je je NOTIS")
+      Text(FeatureFlags.stoneProfiles ? "Zo stel je je NOTIS in" : "Zo koppel je je NOTIS")
         .font(.satoshi(26, .bold))
         .foregroundStyle(NotisBrand.ink)
         .multilineTextAlignment(.center)
         .padding(.top, 28)
 
       VStack(alignment: .leading, spacing: 14) {
-        pairStep(1, "Tik bij Mijn NOTIS op Nieuwe NOTIS koppelen")
-        pairStep(2, "Geef je NOTIS een naam")
-        pairStep(3, "Kies de apps die jij wilt gebruiken")
+        if FeatureFlags.stoneProfiles {
+          pairStep(1, "Maak bij Mijn NOTIS een profiel met de apps die je mag gebruiken")
+          pairStep(2, "Tik op Nieuwe NOTIS koppelen en houd je iPhone tegen je steen")
+          pairStep(3, "Kies welk profiel je steen start")
+        } else {
+          pairStep(1, "Tik bij Mijn NOTIS op Nieuwe NOTIS koppelen")
+          pairStep(2, "Geef je NOTIS een naam")
+          pairStep(3, "Kies de apps die jij wilt gebruiken")
+        }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(16)
@@ -366,7 +373,12 @@ struct NotisOnboardingView: View {
         return
       }
       do {
-        if !isPaired {
+        if !isPaired && FeatureFlags.stoneProfiles {
+          // The stone starts the profile at the top, or a new one with the apps chosen here.
+          BlockedProfiles.saveOnboardingApps(selection)
+          _ = try BlockedProfiles.pairNotisStone(
+            tag: result.id, name: String(localized: "Mijn NOTIS"), profile: nil, in: context)
+        } else if !isPaired {
           _ = try BlockedProfiles.createNotisStone(
             in: context,
             name: String(localized: "Mijn NOTIS"),

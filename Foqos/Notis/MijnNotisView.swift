@@ -261,7 +261,7 @@ private struct NewStoneChoice {
 
 // MARK: - Cards
 
-private struct EmptyStonesCard: View {
+struct EmptyStonesCard: View {
   var body: some View {
     VStack(spacing: 12) {
       NotisStoneGlyph(width: 120)
@@ -269,7 +269,11 @@ private struct EmptyStonesCard: View {
       Text("Nog geen NOTIS gekoppeld")
         .font(.satoshi(20, .bold))
         .foregroundStyle(NotisBrand.ink)
-      Text("Koppel je steen, kies de apps en zet ze met één tik op slot of weer vrij.")
+      Text(
+        FeatureFlags.stoneProfiles
+          ? "Koppel je steen en kies welk profiel hij start. Eén tik zet je apps op slot, nog een tik geeft ze weer vrij."
+          : "Koppel je steen, kies de apps en zet ze met één tik op slot of weer vrij."
+      )
         .font(.satoshi(14))
         .foregroundStyle(NotisBrand.inkSoft)
         .multilineTextAlignment(.center)
@@ -472,7 +476,7 @@ private struct NewStoneSheet: View {
 }
 
 /// Android's `TagHelpSheet`.
-private struct StonesHelpSheet: View {
+struct StonesHelpSheet: View {
   let onDismiss: () -> Void
 
   var body: some View {
@@ -486,11 +490,22 @@ private struct StonesHelpSheet: View {
       Text("Hoe werken de stenen?")
         .font(.satoshi(20, .bold))
         .foregroundStyle(NotisBrand.ink)
-      rule(
-        icon: "arrow.triangle.2.circlepath",
-        title: String(localized: "Elke steen heeft eigen apps"),
-        body: String(localized: "Tik je op een steen, dan gaan de apps op slot die je voor die steen hebt gekozen.")
-      )
+      if FeatureFlags.stoneProfiles {
+        rule(
+          icon: "arrow.triangle.2.circlepath",
+          title: String(localized: "Elke steen start een profiel"),
+          body: String(
+            localized:
+              "Een profiel is een lijst apps die je mag gebruiken. Tik je op een steen, dan gaat al het andere op slot, met het profiel dat je voor die steen hebt gekozen."
+          )
+        )
+      } else {
+        rule(
+          icon: "arrow.triangle.2.circlepath",
+          title: String(localized: "Elke steen heeft eigen apps"),
+          body: String(localized: "Tik je op een steen, dan gaan de apps op slot die je voor die steen hebt gekozen.")
+        )
+      }
       rule(
         icon: "lock",
         title: String(localized: "Elke steen ontgrendelt"),
