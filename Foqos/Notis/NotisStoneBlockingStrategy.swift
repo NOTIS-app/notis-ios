@@ -37,7 +37,11 @@ class NotisStoneBlockingStrategy: BlockingStrategy {
       if let stone = BlockedProfiles.findNotisStone(withTag: tag.id, in: context) {
         let name = stone.notisStoneName(tag: tag.id) ?? stone.name
         self.nfcScanner.resultMessage = String(localized: "Apps op slot · met \(name)")
-        self.lock(context: context, stone: stone, tag: tag.id)
+        // With the profile picked on Home, every stone locks with that one.
+        let profile =
+          FeatureFlags.homeProfilePicker
+          ? (BlockedProfiles.selectedNotisProfile(in: context) ?? stone) : stone
+        self.lock(context: context, stone: profile, tag: tag.id)
         return
       }
       if FeatureFlags.rooms {

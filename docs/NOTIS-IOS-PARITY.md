@@ -91,6 +91,14 @@ Een profiel is een lijst toegestane apps met een naam; elke steen start het prof
 - **Bestaande stenen.** Vroeger was elke steen een profiel met één item en dezelfde naam. Dat is nu een profiel met de naam van de steen en dezelfde apps, zonder migratie. Android geeft zijn verborgen lijsten bij de eerste start eenmalig de naam van hun steen, zodat beide er hetzelfde uitzien.
 - **Verschillen.** Geen: alleen de app-keuze gaat via Apple's eigen scherm. Op iOS is "Mijn NOTIS" tijdens een slot alleen-lezen (op Android is het tabblad dan verborgen). Schakelaar uit: het oude `MijnNotisView` met een lijst per steen.
 
+### Profiel kiezen op Home (schakelaar `homeProfilePicker`, Android `HOME_PROFILE_PICKER`)
+
+- Bovenaan Home een balk in de stijl van de navigatiebalk met het gekozen profiel (icoon, "Profiel", naam, pijltje); tik = lijst van profielen. 🍎 Op iOS een systeemmenu, op Android een uitklaplijst.
+- Elke gekoppelde steen gaat op slot met het gekozen profiel; elke steen ontgrendelt. Lang indrukken op de steen: "Handmatig op slot" met het gekozen profiel.
+- Stenen hebben geen eigen profiel meer: bij koppelen alleen een naam, op de kaart "Gekoppeld", tik = hernoemen.
+- De keuze staat in UserDefaults (`notis.selectedProfileId`); is dat profiel weg, dan geldt het bovenste.
+- Profielen hebben een icoon (12 vaste iconen, zelfde volgorde als Android), te kiezen in het blad "Nieuw profiel" / "Profiel bewerken". 🍎 Op iOS in UserDefaults (`notis.profileIcons`), omdat het Foqos-model er geen veld voor heeft; Android heeft de kolom `profiles.icon`.
+
 ## Kan niet anders op iOS
 
 - Scannen kan alleen nadat je in de app op de steen tikt (Android scant altijd op de achtergrond).

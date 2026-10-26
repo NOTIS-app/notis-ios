@@ -55,6 +55,12 @@ enum FeatureFlags {
   /// profile chosen for it, and the home long-press picks a profile. Off: each stone has its own
   /// app list, as before. Mirrors `FeatureFlags.STONE_PROFILES` on Android.
   static let stoneProfiles = true
+
+  /// Home has a bar at the top to pick the profile; every stone locks with that profile, and
+  /// pressing and holding the home stone locks with it by hand. Stones are paired without a
+  /// profile of their own. Off: each stone starts the profile chosen for it in "Mijn NOTIS".
+  /// Needs `stoneProfiles`. Mirrors `FeatureFlags.HOME_PROFILE_PICKER` on Android.
+  static let homeProfilePicker = true
 }
 
 enum NotisDevice {

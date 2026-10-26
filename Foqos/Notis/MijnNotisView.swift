@@ -270,7 +270,9 @@ struct EmptyStonesCard: View {
         .font(.satoshi(20, .bold))
         .foregroundStyle(NotisBrand.ink)
       Text(
-        FeatureFlags.stoneProfiles
+        FeatureFlags.homeProfilePicker
+          ? "Koppel je steen. Eén tik zet je apps op slot met het profiel dat op Home gekozen is, nog een tik geeft ze weer vrij."
+          : FeatureFlags.stoneProfiles
           ? "Koppel je steen en kies welk profiel hij start. Eén tik zet je apps op slot, nog een tik geeft ze weer vrij."
           : "Koppel je steen, kies de apps en zet ze met één tik op slot of weer vrij."
       )
@@ -490,7 +492,16 @@ struct StonesHelpSheet: View {
       Text("Hoe werken de stenen?")
         .font(.satoshi(20, .bold))
         .foregroundStyle(NotisBrand.ink)
-      if FeatureFlags.stoneProfiles {
+      if FeatureFlags.homeProfilePicker {
+        rule(
+          icon: "arrow.triangle.2.circlepath",
+          title: String(localized: "Je kiest het profiel op Home"),
+          body: String(
+            localized:
+              "Een profiel is een lijst apps die je mag gebruiken. Kies er een bovenaan Home; elke steen zet je telefoon op slot met dat profiel."
+          )
+        )
+      } else if FeatureFlags.stoneProfiles {
         rule(
           icon: "arrow.triangle.2.circlepath",
           title: String(localized: "Elke steen start een profiel"),

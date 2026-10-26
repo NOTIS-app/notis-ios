@@ -144,3 +144,58 @@ extension BlockedProfiles {
     try context.save()
   }
 }
+
+// MARK: - The profile picked on Home (`FeatureFlags.homeProfilePicker`)
+
+extension BlockedProfiles {
+  static let selectedNotisProfileKey = "notis.selectedProfileId"
+
+  /// The profile every stone locks with: the one picked on Home, else the top of the list.
+  static func selectedNotisProfile(in context: ModelContext) -> BlockedProfiles? {
+    let profiles = fetchNotisProfiles(in: context)
+    let id = UserDefaults.standard.string(forKey: selectedNotisProfileKey)
+    return profiles.first { $0.id.uuidString == id } ?? profiles.first
+  }
+}
+
+// MARK: - Profile icons
+
+/// The icons a profile can have; the same list and order as Android's `ProfileIcon`. Stored per
+/// profile id in UserDefaults (the Foqos model has no field for it).
+enum NotisProfileIcon: String, CaseIterable, Identifiable {
+  case apps, work, school, home, sleep, sport, read, music, game, family, travel, focus
+
+  var id: String { rawValue }
+
+  var symbol: String {
+    switch self {
+    case .apps: return "square.grid.2x2"
+    case .work: return "briefcase"
+    case .school: return "graduationcap"
+    case .home: return "house"
+    case .sleep: return "moon"
+    case .sport: return "figure.run"
+    case .read: return "book"
+    case .music: return "music.note"
+    case .game: return "gamecontroller"
+    case .family: return "person.2"
+    case .travel: return "car"
+    case .focus: return "scope"
+    }
+  }
+}
+
+extension BlockedProfiles {
+  private static let iconsKey = "notis.profileIcons"
+
+  var notisIcon: NotisProfileIcon {
+    let icons = UserDefaults.standard.dictionary(forKey: Self.iconsKey) as? [String: String]
+    return icons?[id.uuidString].flatMap(NotisProfileIcon.init(rawValue:)) ?? .apps
+  }
+
+  static func setNotisIcon(_ icon: NotisProfileIcon, for profile: BlockedProfiles) {
+    var icons = UserDefaults.standard.dictionary(forKey: iconsKey) as? [String: String] ?? [:]
+    icons[profile.id.uuidString] = icon.rawValue
+    UserDefaults.standard.set(icons, forKey: iconsKey)
+  }
+}

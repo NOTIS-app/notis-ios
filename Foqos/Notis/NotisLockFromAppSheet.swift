@@ -10,13 +10,19 @@ struct NotisLockFromAppSheet: View {
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 10) {
-        Text(FeatureFlags.stoneProfiles ? "Op slot met welk profiel?" : "Op slot met welke steen?")
+        Text(
+          FeatureFlags.homeProfilePicker
+            ? "Handmatig op slot"
+            : FeatureFlags.stoneProfiles ? "Op slot met welk profiel?" : "Op slot met welke steen?"
+        )
           .font(.satoshi(20, .bold))
           .foregroundStyle(NotisBrand.ink)
           .padding(.top, 28)
         Text(
           choices.isEmpty
             ? "Je hebt nog geen steen gekoppeld. Koppel er eerst een bij Mijn NOTIS."
+            : FeatureFlags.homeProfilePicker
+              ? "Je telefoon gaat op slot met het profiel dat je hebt gekozen. Weer vrij geven kan alleen door je telefoon tegen een NOTIS te houden."
             : FeatureFlags.stoneProfiles
               ? "De apps van dat profiel blijven bruikbaar. Weer vrij geven kan alleen door je telefoon tegen een NOTIS te houden."
               : "De apps van die steen blijven bruikbaar. Weer vrij geven kan alleen door je telefoon tegen een NOTIS te houden."
@@ -31,7 +37,11 @@ struct NotisLockFromAppSheet: View {
             onChoose(stone)
           } label: {
             HStack(spacing: 14) {
-              NotisStoneGlyph(width: 40)
+              if FeatureFlags.stoneProfiles {
+                NotisProfileGlyph(icon: stone.notisIcon, size: 40)
+              } else {
+                NotisStoneGlyph(width: 40)
+              }
               VStack(alignment: .leading, spacing: 2) {
                 Text(stone.name)
                   .font(.satoshi(16, .bold))

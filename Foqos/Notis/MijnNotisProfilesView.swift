@@ -24,7 +24,9 @@ struct MijnNotisProfilesView: View {
   @State private var profileToEdit: BlockedProfiles?
   @State private var stoneForProfile: StoneRef?
   @State private var stoneToRename: StoneRef?
-  @State private var profileNameEdit: ProfileNameEdit?
+  @State private var profileEdit: ProfileEdit?
+  /// A profile made in the edit sheet: its apps are chosen once the sheet is gone.
+  @State private var newProfile: BlockedProfiles?
   @State private var profileToDelete: BlockedProfiles?
   @State private var nameText = ""
   @State private var showHelp = false
@@ -74,19 +76,16 @@ struct MijnNotisProfilesView: View {
               highlight: isActive,
               isLocked: isLocked,
               onOpen: { profileToEdit = profile },
-              onRename: {
-                nameText = profile.name
-                profileNameEdit = ProfileNameEdit(profile: profile)
-              },
+              renameLabel: "Bewerken",
+              onRename: { profileEdit = ProfileEdit(profile: profile) },
               onDelete: { profileToDelete = profile }
             ) {
-              NotisProfileGlyph()
+              NotisProfileGlyph(icon: profile.notisIcon)
             }
           }
 
           Button {
-            nameText = String(localized: "Profiel \(profiles.count + 1)")
-            profileNameEdit = ProfileNameEdit(profile: nil)
+            profileEdit = ProfileEdit(profile: nil)
           } label: {
             Label("Nieuw profiel", systemImage: "plus")
           }
@@ -108,10 +107,20 @@ struct MijnNotisProfilesView: View {
           ForEach(stones) { stone in
             NotisItemCard(
               name: stone.name,
-              subtitle: String(localized: "Start \(stone.profile.name)"),
+              subtitle: FeatureFlags.homeProfilePicker
+                ? String(localized: "Gekoppeld") : String(localized: "Start \(stone.profile.name)"),
               highlight: false,
               isLocked: isLocked,
-              onOpen: { stoneForProfile = stone },
+              // With the Home picker a stone has no profile of its own: tap renames it.
+              onOpen: {
+                if FeatureFlags.homeProfilePicker {
+                  nameText = stone.name
+                  stoneToRename = stone
+                } else {
+                  stoneForProfile = stone
+                }
+              },
+              renameLabel: "Hernoemen",
               onRename: {
                 nameText = stone.name
                 stoneToRename = stone
@@ -133,7 +142,9 @@ struct MijnNotisProfilesView: View {
 
           if !stones.isEmpty {
             Text(
-              "Tik op een profiel om de apps te wijzigen, of op een steen om te kiezen welk profiel hij start. Met elke steen kun je het slot weer openen."
+              FeatureFlags.homeProfilePicker
+                ? "Tik op een profiel om de apps te wijzigen. Op Home kies je met welk profiel je stenen op slot gaan. Met elke steen kun je het slot weer openen."
+                : "Tik op een profiel om de apps te wijzigen, of op een steen om te kiezen welk profiel hij start. Met elke steen kun je het slot weer openen."
             )
             .font(.satoshi(13))
             .foregroundStyle(NotisBrand.inkSoft)
@@ -151,6 +162,7 @@ struct MijnNotisProfilesView: View {
       NewStoneProfileSheet(
         defaultName: defaultStoneName,
         profiles: profiles,
+        askProfile: !FeatureFlags.homeProfilePicker,
         onConfirm: { name, profile in
           newStoneChoice = NewStoneChoice(tag: pairing.tag, name: name, profile: profile)
           newStone = nil
@@ -186,17 +198,17 @@ struct MijnNotisProfilesView: View {
       Button("Bevestigen", action: renameStone)
       Button("Annuleren", role: .cancel) {}
     }
-    .alert(
-      profileNameEdit?.profile == nil ? "Nieuw profiel" : "Profiel hernoemen",
-      isPresented: Binding(
-        get: { profileNameEdit != nil },
-        set: { if !$0 { profileNameEdit = nil } }
-      ),
-      presenting: profileNameEdit
-    ) { edit in
-      TextField("Naam", text: $nameText)
-      Button("Bevestigen") { saveProfileName(edit) }
-      Button("Annuleren", role: .cancel) {}
+    .sheet(item: $profileEdit, onDismiss: openNewProfileApps) { edit in
+      NotisProfileEditSheet(
+        title: edit.profile == nil ? "Nieuw profiel" : "Profiel bewerken",
+        initialName: edit.profile?.name ?? String(localized: "Profiel \(profiles.count + 1)"),
+        initialIcon: edit.profile?.notisIcon ?? .apps
+      ) { name, icon in
+        saveProfile(edit, name: name, icon: icon)
+        profileEdit = nil
+      }
+      .presentationDetents([.large])
+      .presentationBackground(NotisBrand.paper)
     }
     .alert(
       Text("\(profileToDelete?.name ?? "") verwijderen?"),
@@ -337,18 +349,26 @@ struct MijnNotisProfilesView: View {
     }
   }
 
-  private func saveProfileName(_ edit: ProfileNameEdit) {
-    guard let name = trimmedName else { return }
+  private func saveProfile(_ edit: ProfileEdit, name: String, icon: NotisProfileIcon) {
     do {
       if let profile = edit.profile {
         try BlockedProfiles.renameNotisProfile(profile, to: name, in: context)
+        BlockedProfiles.setNotisIcon(icon, for: profile)
       } else {
-        // Straight on to choosing the new profile's apps.
-        profileToEdit = try BlockedProfiles.createNotisProfile(in: context, name: name)
+        let profile = try BlockedProfiles.createNotisProfile(in: context, name: name)
+        BlockedProfiles.setNotisIcon(icon, for: profile)
+        newProfile = profile
       }
     } catch {
       errorMessage = error.localizedDescription
     }
+  }
+
+  /// Straight on to choosing a new profile's apps.
+  private func openNewProfileApps() {
+    guard let profile = newProfile else { return }
+    newProfile = nil
+    profileToEdit = profile
   }
 
   private var trimmedName: String? {
@@ -357,7 +377,7 @@ struct MijnNotisProfilesView: View {
   }
 
   private func deleteMessage(for profile: BlockedProfiles) -> String {
-    if !profile.notisStones.isEmpty, let heir = BlockedProfiles.notisProfileHeir(of: profile, in: context) {
+    if !FeatureFlags.homeProfilePicker, !profile.notisStones.isEmpty, let heir = BlockedProfiles.notisProfileHeir(of: profile, in: context) {
       return String(localized: "De stenen ervan starten voortaan \(heir.name).")
     }
     return String(localized: "De apps die je ervoor hebt gekozen, verdwijnen.")
@@ -396,19 +416,21 @@ private struct NewStoneChoice {
   let profile: BlockedProfiles?
 }
 
-/// What the profile name alert edits: a new profile (`profile` nil) or an existing one.
-private struct ProfileNameEdit {
+/// What the profile edit sheet edits: a new profile (`profile` nil) or an existing one.
+private struct ProfileEdit: Identifiable {
   let profile: BlockedProfiles?
+  let id = UUID()
 }
 
 // MARK: - Cards
 
-/// A profile's mark beside its name, the size of a stone glyph (Android: the apps icon).
+/// A profile's icon beside its name, the size of a stone glyph (Android: `ProfileGlyph`).
 struct NotisProfileGlyph: View {
+  var icon: NotisProfileIcon = .apps
   var size: CGFloat = 52
 
   var body: some View {
-    Image(systemName: "square.grid.2x2")
+    Image(systemName: icon.symbol)
       .font(.system(size: size * 0.42))
       .foregroundStyle(NotisBrand.mandarinDark)
       .frame(width: size, height: size)
@@ -423,6 +445,7 @@ private struct NotisItemCard<Leading: View>: View {
   let highlight: Bool
   let isLocked: Bool
   let onOpen: () -> Void
+  let renameLabel: LocalizedStringKey
   let onRename: () -> Void
   let onDelete: () -> Void
   @ViewBuilder let leading: () -> Leading
@@ -449,7 +472,7 @@ private struct NotisItemCard<Leading: View>: View {
 
       Menu {
         Button(action: onRename) {
-          Label("Hernoemen", systemImage: "pencil")
+          Label(renameLabel, systemImage: "pencil")
         }
         Button(role: .destructive, action: onDelete) {
           Label("Verwijderen", systemImage: "trash")
@@ -478,6 +501,8 @@ private struct NotisItemCard<Leading: View>: View {
 private struct NewStoneProfileSheet: View {
   let defaultName: String
   let profiles: [BlockedProfiles]
+  /// Off with the Home picker: a stone has no profile of its own then.
+  let askProfile: Bool
   let onConfirm: (String, BlockedProfiles?) -> Void
 
   @State private var name = ""
@@ -510,7 +535,7 @@ private struct NewStoneProfileSheet: View {
           Text("Deze steen krijgt een nieuw profiel. Daarna kies je de apps.")
             .font(.satoshi(14))
             .foregroundStyle(NotisBrand.inkSoft)
-        } else {
+        } else if askProfile {
           Text("Welk profiel start deze steen?")
             .font(.satoshi(16, .bold))
             .foregroundStyle(NotisBrand.ink)
@@ -538,6 +563,85 @@ private struct NewStoneProfileSheet: View {
     .onAppear {
       if name.isEmpty { name = defaultName }
       if profile == nil { profile = profiles.first }
+    }
+  }
+}
+
+/// New profile or "Bewerken": its name and icon (Android: `ProfileEditSheet`).
+struct NotisProfileEditSheet: View {
+  let title: LocalizedStringKey
+  let initialName: String
+  let initialIcon: NotisProfileIcon
+  let onSave: (String, NotisProfileIcon) -> Void
+
+  @State private var name = ""
+  @State private var icon: NotisProfileIcon = .apps
+  @State private var isLoaded = false
+
+  private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 6)
+
+  var body: some View {
+    ScrollView {
+      VStack(alignment: .leading, spacing: 12) {
+        HStack(spacing: 12) {
+          NotisProfileGlyph(icon: icon, size: 48)
+          Text(title)
+            .font(.satoshi(22, .bold))
+            .foregroundStyle(NotisBrand.ink)
+        }
+        .padding(.top, 28)
+
+        VStack(alignment: .leading, spacing: 4) {
+          Text("Naam")
+            .font(.satoshi(12, .medium))
+            .foregroundStyle(NotisBrand.inkSoft)
+          TextField("Naam", text: $name)
+            .font(.satoshi(17))
+            .foregroundStyle(NotisBrand.ink)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .notisCard(radius: 12)
+
+        Text("Icoon")
+          .font(.satoshi(16, .bold))
+          .foregroundStyle(NotisBrand.ink)
+          .padding(.top, 4)
+
+        LazyVGrid(columns: columns, spacing: 10) {
+          ForEach(NotisProfileIcon.allCases) { option in
+            let isSelected = option == icon
+            Button {
+              icon = option
+            } label: {
+              Image(systemName: option.symbol)
+                .font(.system(size: 20))
+                .foregroundStyle(isSelected ? .white : NotisBrand.mandarinDark)
+                .frame(maxWidth: .infinity)
+                .aspectRatio(1, contentMode: .fit)
+                .background(
+                  Circle().fill(isSelected ? NotisBrand.mandarinDark : NotisBrand.mandarinDark.opacity(0.1))
+                )
+            }
+            .buttonStyle(.plain)
+          }
+        }
+
+        Button("Opslaan") {
+          let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+          onSave(trimmed.isEmpty ? initialName : String(trimmed.prefix(100)), icon)
+        }
+        .buttonStyle(NotisPrimaryButtonStyle())
+        .padding(.top, 8)
+      }
+      .padding(.horizontal, 20)
+      .padding(.bottom, 16)
+    }
+    .onAppear {
+      guard !isLoaded else { return }
+      name = initialName
+      icon = initialIcon
+      isLoaded = true
     }
   }
 }

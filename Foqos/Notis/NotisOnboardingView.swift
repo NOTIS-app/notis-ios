@@ -330,7 +330,11 @@ struct NotisOnboardingView: View {
         if FeatureFlags.stoneProfiles {
           pairStep(1, "Maak bij Mijn NOTIS een profiel met de apps die je mag gebruiken")
           pairStep(2, "Tik op Nieuwe NOTIS koppelen en houd je iPhone tegen je steen")
-          pairStep(3, "Kies welk profiel je steen start")
+          if FeatureFlags.homeProfilePicker {
+            pairStep(3, "Kies bovenaan Home je profiel en tik je steen")
+          } else {
+            pairStep(3, "Kies welk profiel je steen start")
+          }
         } else {
           pairStep(1, "Tik bij Mijn NOTIS op Nieuwe NOTIS koppelen")
           pairStep(2, "Geef je NOTIS een naam")
