@@ -222,6 +222,28 @@ final class NotisSchool: ObservableObject {
     }
   }
 
+  /// Wipes this phone's anonymous account on the server (school, status, parents) and
+  /// everything cached here; the next stone tap starts with a fresh account. False when the
+  /// server couldn't be reached: then nothing changes. Mirrors `deleteMyData` on Android.
+  func deleteMyData() async -> Bool {
+    if client.auth.currentUser != nil {
+      do {
+        try await client.rpc("delete_my_account").execute()
+      } catch {
+        print("NotisSchool deleteMyData failed: \(error)")
+        return false
+      }
+      try? await client.auth.signOut()
+    }
+    setSchool(nil)
+    setGuardians([])
+    pendingInvite = nil
+    for key in [Keys.displayName, Keys.chosenVersion, Keys.appCount, Keys.hasCategory] {
+      defaults.removeObject(forKey: key)
+    }
+    return true
+  }
+
   // MARK: - Parents
 
   private func setGuardians(_ list: [LinkedGuardian]) {

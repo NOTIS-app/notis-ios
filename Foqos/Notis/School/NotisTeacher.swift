@@ -130,6 +130,12 @@ final class NotisTeacher: ObservableObject {
     UserDefaults.standard.set(newRole.rawValue, forKey: Self.roleKey)
   }
 
+  /// Deletes this teacher or parent account and everything linked to it, then signs out.
+  func deleteAccount() async throws {
+    try await client.rpc("delete_my_account").execute()
+    await signOut()
+  }
+
   func signOut() async {
     try? await client.auth.signOut()
     email = nil

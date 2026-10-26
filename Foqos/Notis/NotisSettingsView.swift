@@ -16,6 +16,11 @@ struct NotisSettingsView: View {
   @ObservedObject private var school = NotisSchool.shared
   @ObservedObject private var teacher = NotisTeacher.shared
   @State private var showLeaveSchool = false
+  @State private var showDeleteData = false
+  @State private var deleteDataFailed = false
+  @State private var showDeleteAccount = false
+  @State private var showLicenses = false
+  @State private var deleteAccountFailed = false
   /// The login sheet that is open: "Ik ben docent", "Ik ben ouder" or the hidden admin login.
   @State private var loginRole: NotisTeacher.AccountRole?
   @State private var showParentLink = false
@@ -101,6 +106,15 @@ struct NotisSettingsView: View {
                   action: { showParentLink = true }
                 )
               }
+              // Required by the App Store. Not during a school lock: that would be a way out of it.
+              if !isSchoolLocked {
+                SettingsRow(
+                  icon: "trash",
+                  title: String(localized: "Mijn gegevens wissen"),
+                  subtitle: String(localized: "Haalt je school, naam, status en ouders weg bij NOTIS"),
+                  action: { showDeleteData = true }
+                )
+              }
             }
 
             accountCards
@@ -141,6 +155,12 @@ struct NotisSettingsView: View {
             showsChevron: false
           )
           .onTapGesture(perform: tapAbout)
+
+          SettingsRow(
+            icon: "doc.text",
+            title: String(localized: "Open-sourcelicenties"),
+            action: { showLicenses = true }
+          )
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 104)
@@ -220,6 +240,9 @@ struct NotisSettingsView: View {
     .fullScreenCover(isPresented: $showStoneLink) {
       NotisStoneLinkView { showStoneLink = false }
     }
+    .sheet(isPresented: $showLicenses) {
+      NotisLicensesSheet { showLicenses = false }
+    }
     .sheet(isPresented: $showRecoveryCode) {
       NotisRecoveryCodeRevealSheet(teacher: teacher) { showRecoveryCode = false }
         .presentationDetents([.medium])
@@ -237,6 +260,45 @@ struct NotisSettingsView: View {
       Text(
         "Je docenten zien dan niet meer of je telefoon gelocked is, en de stenen van deze school zetten je telefoon niet meer op slot."
       )
+    }
+    .alert(String(localized: "Mijn gegevens wissen"), isPresented: $showDeleteData) {
+      Button("Wissen", role: .destructive) {
+        Task {
+          deleteDataFailed = !(await school.deleteMyData())
+        }
+      }
+      Button("Annuleren", role: .cancel) {}
+    } message: {
+      Text(
+        "NOTIS wist alles wat het over deze telefoon bewaart: je school, de naam die je koos, of NOTIS op slot staat en gekoppelde ouders. Je stenen en instellingen op deze telefoon blijven. Dit kan niet ongedaan worden."
+      )
+    }
+    .alert(String(localized: "Account verwijderen"), isPresented: $showDeleteAccount) {
+      Button("Verwijderen", role: .destructive) {
+        Task {
+          do {
+            try await teacher.deleteAccount()
+          } catch {
+            deleteAccountFailed = true
+          }
+        }
+      }
+      Button("Annuleren", role: .cancel) {}
+    } message: {
+      Text(
+        "Je login en alles wat eraan gekoppeld is worden voorgoed verwijderd (voor een ouder: de koppelingen met je kinderen en de app-lijsten die je instelde). Dit kan niet ongedaan worden."
+      )
+    }
+    .alert(
+      String(localized: "NOTIS is niet bereikbaar"),
+      isPresented: Binding(
+        get: { deleteDataFailed || deleteAccountFailed },
+        set: { if !$0 { deleteDataFailed = false; deleteAccountFailed = false } }
+      )
+    ) {
+      Button("OK", role: .cancel) {}
+    } message: {
+      Text("Er is niets gewist. Controleer je internet en probeer het opnieuw.")
     }
     .onChange(of: notificationsEnabled) { _, isOn in
       NotisNotifications.apply(isOn, context: context, strategyManager: strategyManager)
@@ -323,10 +385,10 @@ struct NotisSettingsView: View {
           action: { showRecoveryCode = true }
         )
       }
-      signOutCard(String(localized: "Docent: \(teacher.email ?? "")"))
+      signOutCard(String(localized: "Docent: \(teacher.email ?? "")"), canDelete: true)
     case .parent:
       childrenCard
-      signOutCard(String(localized: "Ouder: \(teacher.email ?? "")"))
+      signOutCard(String(localized: "Ouder: \(teacher.email ?? "")"), canDelete: true)
     case .admin:
       // NOTIS admins (hidden login): prepare stones, then link the school stones.
       SettingsCard {
@@ -349,7 +411,9 @@ struct NotisSettingsView: View {
     }
   }
 
-  private func signOutCard(_ subtitle: String) -> some View {
+  /// Signing out; teachers and parents can also delete their account (the stores require it).
+  /// NOTIS admins are removed by hand.
+  private func signOutCard(_ subtitle: String, canDelete: Bool = false) -> some View {
     SettingsCard {
       SettingsRow(
         icon: "rectangle.portrait.and.arrow.right",
@@ -358,6 +422,14 @@ struct NotisSettingsView: View {
         showsChevron: false,
         action: { Task { await teacher.signOut() } }
       )
+      if canDelete {
+        SettingsRow(
+          icon: "trash",
+          title: String(localized: "Account verwijderen"),
+          subtitle: String(localized: "Verwijdert \(teacher.email ?? "") en alles wat eraan gekoppeld is"),
+          action: { showDeleteAccount = true }
+        )
+      }
     }
   }
 

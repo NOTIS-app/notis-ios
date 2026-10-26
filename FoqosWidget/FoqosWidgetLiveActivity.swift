@@ -347,7 +347,7 @@ extension FoqosWidgetAttributes.ContentState {
   fileprivate static var mintCat: FoqosWidgetAttributes.ContentState {
     var state = shortTime
     state.themeColorName = "Mint Fresh"
-    state.appIconName = AppIconOption.cat.alternateIconName
+    state.appIconName = AppIconOption.defaultIcon.alternateIconName
     return state
   }
 
