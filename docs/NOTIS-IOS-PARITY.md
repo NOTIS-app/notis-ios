@@ -99,6 +99,12 @@ Een profiel is een lijst toegestane apps met een naam; elke steen start het prof
 - De keuze staat in UserDefaults (`notis.selectedProfileId`); is dat profiel weg, dan geldt het bovenste.
 - Profielen hebben een icoon (12 vaste iconen, zelfde volgorde als Android), te kiezen in het blad "Nieuw profiel" / "Profiel bewerken". 🍎 Op iOS in UserDefaults (`notis.profileIcons`), omdat het Foqos-model er geen veld voor heeft; Android heeft de kolom `profiles.icon`.
 
+## Instellingen: ouder, docent, gegevens wissen
+
+- Uitgelogd: eerst "Ik ben ouder", dan "Ik ben docent".
+- "Ouder koppelen" toont de koppelcode ook als QR-code (`ParentLinkQR`, tekst `NOTIS-OUDER:<code>`, gelijk aan Android); "Kind toevoegen" heeft "QR-code scannen" (de bestaande QR-scanner van de app). Android en iPhone scannen elkaars code.
+- Eén rode knop "Mijn gegevens wissen" onderaan. Met een ingelogde ouder verwijdert die ook het ouderaccount, na het typen van WISSEN. Docenten en NOTIS-beheerders zien de knop niet; een beheerder verwijdert hen. De aparte knop "Account verwijderen" staat achter `separateAccountDelete` (uit).
+
 ## Kan niet anders op iOS
 
 - Scannen kan alleen nadat je in de app op de steen tikt (Android scant altijd op de achtergrond).
