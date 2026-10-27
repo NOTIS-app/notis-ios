@@ -19,6 +19,7 @@ struct NotisSettingsView: View {
   @State private var showDeleteData = false
   @State private var deleteDataFailed = false
   @State private var showDeleteAccount = false
+  @State private var showLicenses = false
   @State private var deleteAccountFailed = false
   /// The login sheet that is open: "Ik ben docent", "Ik ben ouder" or the hidden admin login.
   @State private var loginRole: NotisTeacher.AccountRole?
@@ -134,12 +135,11 @@ struct NotisSettingsView: View {
               trailingSystemImage: "arrow.up.right.square",
               action: { openURL(URL(string: "https://notisapp.nl/privacy.html")!) }
             )
-            // The licenses of Foqos, supabase-swift and Satoshi, on the website.
+            // The license texts ship with the app (MIT asks for that), with a link to the website.
             SettingsRow(
               icon: "doc.text",
               title: String(localized: "Open-sourcelicenties"),
-              trailingSystemImage: "arrow.up.right.square",
-              action: { openURL(URL(string: "https://notisapp.nl/licenties")!) }
+              action: { showLicenses = true }
             )
           }
 
@@ -243,6 +243,9 @@ struct NotisSettingsView: View {
     }
     .fullScreenCover(isPresented: $showStoneLink) {
       NotisStoneLinkView { showStoneLink = false }
+    }
+    .sheet(isPresented: $showLicenses) {
+      NotisLicensesSheet { showLicenses = false }
     }
     .sheet(isPresented: $showRecoveryCode) {
       NotisRecoveryCodeRevealSheet(teacher: teacher) { showRecoveryCode = false }
