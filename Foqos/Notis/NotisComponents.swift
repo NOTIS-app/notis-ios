@@ -138,7 +138,12 @@ struct NotisNavBar: View {
 
   var body: some View {
     HStack(spacing: 0) {
-      item(.stones, label: "Mijn NOTIS", icon: "wave.3.right.circle", selectedIcon: "wave.3.right.circle.fill")
+      // `FeatureFlags.anyNotisStone`: no stones to manage, so the tab holds only the profiles.
+      if FeatureFlags.anyNotisStone {
+        item(.stones, label: "Profielen", icon: "square.grid.2x2", selectedIcon: "square.grid.2x2.fill")
+      } else {
+        item(.stones, label: "Mijn NOTIS", icon: "wave.3.right.circle", selectedIcon: "wave.3.right.circle.fill")
+      }
       item(.home, label: "Home", icon: "house", selectedIcon: "house.fill")
       item(.settings, label: "Instellingen", icon: "gearshape", selectedIcon: "gearshape.fill")
     }

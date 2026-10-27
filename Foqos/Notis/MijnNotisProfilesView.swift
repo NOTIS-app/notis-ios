@@ -263,11 +263,11 @@ struct MijnNotisProfilesView: View {
   private var header: some View {
     HStack(alignment: .center, spacing: 4) {
       VStack(alignment: .leading, spacing: 2) {
-        Text("Mijn NOTIS")
+        Text(FeatureFlags.anyNotisStone ? "Profielen" : "Mijn NOTIS")
           .font(.satoshi(28, .bold))
           .tracking(-0.5)
           .foregroundStyle(NotisBrand.ink)
-        Text(FeatureFlags.anyNotisStone ? "Je profielen" : "Je profielen en stenen")
+        Text(FeatureFlags.anyNotisStone ? "Kies welke apps je mag gebruiken" : "Je profielen en stenen")
           .font(.satoshi(14))
           .foregroundStyle(NotisBrand.inkSoft)
       }

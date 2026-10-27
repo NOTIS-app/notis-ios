@@ -46,7 +46,7 @@ class NotisStoneBlockingStrategy: BlockingStrategy {
       }
       if self.isAnyOwnStone(tag) {
         guard let profile = BlockedProfiles.selectedNotisProfile(in: context) else {
-          self.nfcScanner.resultErrorMessage = String(localized: "Maak eerst een profiel bij Mijn NOTIS")
+          self.nfcScanner.resultErrorMessage = String(localized: "Maak eerst een profiel bij Profielen")
           return
         }
         self.nfcScanner.resultMessage = String(localized: "Apps op slot · met \(profile.name)")
