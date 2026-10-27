@@ -63,7 +63,7 @@ enum FeatureFlags {
   static let homeProfilePicker = true
 
   /// A separate "Account verwijderen" under signing out. Off: "Mijn gegevens wissen" deletes a
-  /// signed-in teacher's or parent's account as well, after typing the confirm word.
+  /// signed-in parent's account as well, after typing the confirm word.
   /// Mirrors `FeatureFlags.SEPARATE_ACCOUNT_DELETE` on Android.
   static let separateAccountDelete = false
 }

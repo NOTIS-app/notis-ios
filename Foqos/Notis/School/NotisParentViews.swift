@@ -1,3 +1,4 @@
+import CodeScanner
 import SwiftUI
 
 // MARK: - Child's phone: "Ouder koppelen"
@@ -33,10 +34,20 @@ struct NotisParentLinkSheet: View {
       case .loading:
         ProgressView().tint(NotisBrand.mandarinDark).padding(24)
       case .showing(let code):
-        Text("Je ouder vult deze code in, in de eigen NOTIS-app bij Instellingen → Ik ben ouder → Kind toevoegen.")
+        Text("Je ouder scant deze QR-code, of vult de code in, in de eigen NOTIS-app bij Instellingen → Ik ben ouder → Kind toevoegen.")
           .font(.satoshi(14))
           .foregroundStyle(NotisBrand.inkSoft)
           .multilineTextAlignment(.center)
+        if let qr = ParentLinkQR.image(code.code) {
+          Image(uiImage: qr)
+            .interpolation(.none)
+            .resizable()
+            .scaledToFit()
+            .frame(width: 200, height: 200)
+            .padding(8)
+            .background(.white, in: RoundedRectangle(cornerRadius: 12))
+            .accessibilityLabel("QR-code om een ouder te koppelen")
+        }
         Text(code.code)
           .font(.satoshi(40, .bold))
           .tracking(6)
@@ -111,15 +122,24 @@ struct NotisAddChildSheet: View {
   @State private var name = ""
   @State private var isBusy = false
   @State private var errorText: String?
+  @State private var isScanning = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text("Kind toevoegen")
         .font(.satoshi(22, .bold))
         .foregroundStyle(NotisBrand.ink)
-      Text("Ga op de telefoon van je kind naar Instellingen → Ouder koppelen. Vul de code in die daar verschijnt.")
+      Text("Ga op de telefoon van je kind naar Instellingen → Ouder koppelen. Scan de QR-code die daar verschijnt, of vul de code in.")
         .font(.satoshi(14))
         .foregroundStyle(NotisBrand.inkSoft)
+      Button {
+        errorText = nil
+        isScanning = true
+      } label: {
+        Label("QR-code scannen", systemImage: "qrcode.viewfinder")
+      }
+      .buttonStyle(NotisOutlinedButtonStyle())
+      .disabled(isBusy)
       NotisTextField(title: "Koppelcode", text: $code, isSecure: false)
         .textInputAutocapitalization(.characters)
         .autocorrectionDisabled()
@@ -143,6 +163,20 @@ struct NotisAddChildSheet: View {
         .disabled(isBusy)
     }
     .padding(24)
+    .sheet(isPresented: $isScanning) {
+      LabeledCodeScannerView(
+        heading: String(localized: "QR-code scannen"),
+        subtitle: String(localized: "Richt je camera op de QR-code op de telefoon van je kind.")
+      ) { result in
+        isScanning = false
+        guard case .success(let scan) = result else { return }
+        if let scanned = ParentLinkQR.parse(scan.string) {
+          code = scanned
+        } else {
+          errorText = String(localized: "Dit is geen NOTIS-koppelcode. Scan de QR-code bij Ouder koppelen.")
+        }
+      }
+    }
   }
 
   private func link() async {

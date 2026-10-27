@@ -158,8 +158,9 @@ struct NotisSettingsView: View {
 
           // Last on the screen, in red (the App Store requires it). Not during a school lock:
           // that would be a way out of it.
-          // With a teacher or parent signed in, the account goes too. Not for NOTIS admins.
-          if FeatureFlags.rooms && !isSchoolLocked && teacher.role != .admin {
+          // With a parent signed in, the account goes too. Not for teachers and NOTIS admins:
+          // a NOTIS admin removes them.
+          if FeatureFlags.rooms && !isSchoolLocked && teacher.role != .admin && teacher.role != .teacher {
             SettingsRow(
               icon: "trash",
               iconColor: NotisPalette.light.error,
@@ -369,9 +370,9 @@ struct NotisSettingsView: View {
     if let fresh = try? await NotisParent.shared.children() { children = fresh }
   }
 
-  /// "Mijn gegevens wissen" also deletes a signed-in teacher's or parent's account.
+  /// "Mijn gegevens wissen" also deletes a signed-in parent's account.
   private var deletesAccount: Bool {
-    !FeatureFlags.separateAccountDelete && (teacher.role == .teacher || teacher.role == .parent)
+    !FeatureFlags.separateAccountDelete && teacher.role == .parent
   }
 
   /// First the account on the server (after the typed word), then what this phone keeps.
@@ -436,7 +437,8 @@ struct NotisSettingsView: View {
           action: { showRecoveryCode = true }
         )
       }
-      signOutCard(String(localized: "Docent: \(teacher.email ?? "")"), canDelete: true)
+      // Teachers are removed by a NOTIS admin.
+      signOutCard(String(localized: "Docent: \(teacher.email ?? "")"))
     case .parent:
       childrenCard
       signOutCard(String(localized: "Ouder: \(teacher.email ?? "")"), canDelete: true)
