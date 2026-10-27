@@ -61,6 +61,11 @@ enum FeatureFlags {
   /// profile of their own. Off: each stone starts the profile chosen for it in "Mijn NOTIS".
   /// Needs `stoneProfiles`. Mirrors `FeatureFlags.HOME_PROFILE_PICKER` on Android.
   static let homeProfilePicker = true
+
+  /// A separate "Account verwijderen" under signing out. Off: "Mijn gegevens wissen" deletes a
+  /// signed-in teacher's or parent's account as well, after typing the confirm word.
+  /// Mirrors `FeatureFlags.SEPARATE_ACCOUNT_DELETE` on Android.
+  static let separateAccountDelete = false
 }
 
 enum NotisDevice {

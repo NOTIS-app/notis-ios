@@ -21,6 +21,9 @@ struct NotisSettingsView: View {
   @State private var showDeleteAccount = false
   @State private var showLicenses = false
   @State private var deleteAccountFailed = false
+  /// "Mijn gegevens wissen" with an account: what was typed, and whether it wasn't the word.
+  @State private var deleteWord = ""
+  @State private var deleteWordWrong = false
   /// The login sheet that is open: "Ik ben docent", "Ik ben ouder" or the hidden admin login.
   @State private var loginRole: NotisTeacher.AccountRole?
   @State private var showParentLink = false
@@ -155,14 +158,20 @@ struct NotisSettingsView: View {
 
           // Last on the screen, in red (the App Store requires it). Not during a school lock:
           // that would be a way out of it.
-          if FeatureFlags.rooms && !isSchoolLocked {
+          // With a teacher or parent signed in, the account goes too. Not for NOTIS admins.
+          if FeatureFlags.rooms && !isSchoolLocked && teacher.role != .admin {
             SettingsRow(
               icon: "trash",
               iconColor: NotisPalette.light.error,
               title: String(localized: "Mijn gegevens wissen"),
               titleColor: NotisPalette.light.error,
-              subtitle: String(localized: "Haalt je school, naam, status en ouders weg bij NOTIS"),
-              action: { showDeleteData = true }
+              subtitle: deletesAccount
+                ? String(localized: "Verwijdert ook je account \(teacher.email ?? "")")
+                : String(localized: "Haalt je school, naam, status en ouders weg bij NOTIS"),
+              action: {
+                deleteWord = ""
+                showDeleteData = true
+              }
             )
           }
         }
@@ -266,16 +275,27 @@ struct NotisSettingsView: View {
       )
     }
     .alert(String(localized: "Mijn gegevens wissen"), isPresented: $showDeleteData) {
-      Button("Wissen", role: .destructive) {
-        Task {
-          deleteDataFailed = !(await school.deleteMyData())
-        }
+      if deletesAccount {
+        TextField("Typ WISSEN om te bevestigen", text: $deleteWord)
+          .textInputAutocapitalization(.characters)
       }
+      Button("Wissen", role: .destructive, action: deleteMyData)
       Button("Annuleren", role: .cancel) {}
     } message: {
-      Text(
-        "NOTIS wist alles wat het over deze telefoon bewaart: je school, de naam die je koos, of NOTIS op slot staat en gekoppelde ouders. Je stenen en instellingen op deze telefoon blijven. Dit kan niet ongedaan worden."
-      )
+      if deletesAccount {
+        Text(
+          "NOTIS wist alles wat het over deze telefoon bewaart (je school, naam, status en gekoppelde ouders) en verwijdert je account \(teacher.email ?? "") met alles wat eraan gekoppeld is (voor een ouder: de koppelingen met je kinderen en de app-lijsten die je instelde). Je profielen en instellingen op deze telefoon blijven. Dit kan niet ongedaan worden."
+        )
+      } else {
+        Text(
+          "NOTIS wist alles wat het over deze telefoon bewaart: je school, de naam die je koos, of NOTIS op slot staat en gekoppelde ouders. Je profielen en instellingen op deze telefoon blijven. Dit kan niet ongedaan worden."
+        )
+      }
+    }
+    .alert(String(localized: "Er is niets gewist"), isPresented: $deleteWordWrong) {
+      Button("OK", role: .cancel) {}
+    } message: {
+      Text("Typ WISSEN om te bevestigen dat ook je account weg mag.")
     }
     .alert(String(localized: "Account verwijderen"), isPresented: $showDeleteAccount) {
       Button("Verwijderen", role: .destructive) {
@@ -349,6 +369,33 @@ struct NotisSettingsView: View {
     if let fresh = try? await NotisParent.shared.children() { children = fresh }
   }
 
+  /// "Mijn gegevens wissen" also deletes a signed-in teacher's or parent's account.
+  private var deletesAccount: Bool {
+    !FeatureFlags.separateAccountDelete && (teacher.role == .teacher || teacher.role == .parent)
+  }
+
+  /// First the account on the server (after the typed word), then what this phone keeps.
+  private func deleteMyData() {
+    let withAccount = deletesAccount
+    if withAccount
+      && deleteWord.trimmingCharacters(in: .whitespaces).caseInsensitiveCompare("WISSEN") != .orderedSame
+    {
+      deleteWordWrong = true
+      return
+    }
+    Task {
+      if withAccount {
+        do {
+          try await teacher.deleteAccount()
+        } catch {
+          deleteAccountFailed = true
+          return
+        }
+      }
+      deleteDataFailed = !(await school.deleteMyData())
+    }
+  }
+
   /// The account, as Android's `AccountSection`: signed out "Ik ben docent" and "Ik ben ouder";
   /// signed in what the kind of account does, then signing out.
   @ViewBuilder
@@ -356,12 +403,6 @@ struct NotisSettingsView: View {
     switch teacher.role {
     case nil:
       SettingsCard {
-        SettingsRow(
-          icon: "person.crop.square",
-          title: String(localized: "Ik ben docent"),
-          subtitle: String(localized: "Log in om je lokaal te zien"),
-          action: { loginRole = .teacher }
-        )
         if FeatureFlags.parentControls {
           SettingsRow(
             icon: "figure.and.child.holdinghands",
@@ -370,6 +411,12 @@ struct NotisSettingsView: View {
             action: { loginRole = .parent }
           )
         }
+        SettingsRow(
+          icon: "person.crop.square",
+          title: String(localized: "Ik ben docent"),
+          subtitle: String(localized: "Log in om je lokaal te zien"),
+          action: { loginRole = .teacher }
+        )
       }
     case .teacher:
       SettingsCard {
@@ -426,7 +473,7 @@ struct NotisSettingsView: View {
         showsChevron: false,
         action: { Task { await teacher.signOut() } }
       )
-      if canDelete {
+      if canDelete && FeatureFlags.separateAccountDelete {
         SettingsRow(
           icon: "trash",
           title: String(localized: "Account verwijderen"),
