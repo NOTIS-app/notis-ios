@@ -59,7 +59,10 @@ struct MijnNotisProfilesView: View {
           header
             .padding(.bottom, 8)
 
-          sectionTitle("Profielen")
+          // Without stones on this screen, the section title would repeat the screen's.
+          if !FeatureFlags.anyNotisStone {
+            sectionTitle("Profielen")
+          }
 
           if profiles.isEmpty {
             Text("Nog geen profielen. Een profiel is een lijst apps die je mag gebruiken; elke steen start er een.")
@@ -267,9 +270,11 @@ struct MijnNotisProfilesView: View {
           .font(.satoshi(28, .bold))
           .tracking(-0.5)
           .foregroundStyle(NotisBrand.ink)
-        Text(FeatureFlags.anyNotisStone ? "Kies welke apps je mag gebruiken" : "Je profielen en stenen")
-          .font(.satoshi(14))
-          .foregroundStyle(NotisBrand.inkSoft)
+        if !FeatureFlags.anyNotisStone {
+          Text("Je profielen en stenen")
+            .font(.satoshi(14))
+            .foregroundStyle(NotisBrand.inkSoft)
+        }
       }
       Spacer()
       Button {
