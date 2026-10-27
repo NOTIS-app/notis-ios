@@ -19,7 +19,6 @@ struct NotisSettingsView: View {
   @State private var showDeleteData = false
   @State private var deleteDataFailed = false
   @State private var showDeleteAccount = false
-  @State private var showLicenses = false
   @State private var deleteAccountFailed = false
   /// The login sheet that is open: "Ik ben docent", "Ik ben ouder" or the hidden admin login.
   @State private var loginRole: NotisTeacher.AccountRole?
@@ -135,6 +134,13 @@ struct NotisSettingsView: View {
               trailingSystemImage: "arrow.up.right.square",
               action: { openURL(URL(string: "https://notisapp.nl/privacy.html")!) }
             )
+            // The licenses of Foqos, supabase-swift and Satoshi, on the website.
+            SettingsRow(
+              icon: "doc.text",
+              title: String(localized: "Open-sourcelicenties"),
+              trailingSystemImage: "arrow.up.right.square",
+              action: { openURL(URL(string: "https://notisapp.nl/licenties")!) }
+            )
           }
 
           // "Over NOTIS" stands on its own, without a card, as on Android. Seven quick taps open
@@ -146,12 +152,6 @@ struct NotisSettingsView: View {
             showsChevron: false
           )
           .onTapGesture(perform: tapAbout)
-
-          SettingsRow(
-            icon: "doc.text",
-            title: String(localized: "Open-sourcelicenties"),
-            action: { showLicenses = true }
-          )
 
           // Last on the screen, in red (the App Store requires it). Not during a school lock:
           // that would be a way out of it.
@@ -243,9 +243,6 @@ struct NotisSettingsView: View {
     }
     .fullScreenCover(isPresented: $showStoneLink) {
       NotisStoneLinkView { showStoneLink = false }
-    }
-    .sheet(isPresented: $showLicenses) {
-      NotisLicensesSheet { showLicenses = false }
     }
     .sheet(isPresented: $showRecoveryCode) {
       NotisRecoveryCodeRevealSheet(teacher: teacher) { showRecoveryCode = false }
