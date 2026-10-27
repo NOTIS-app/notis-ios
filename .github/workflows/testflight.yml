@@ -1,7 +1,7 @@
 name: iOS build & TestFlight
 
 # Two jobs, so you only spend a full signed build when you want one:
-# - check:      every push to a notis/** branch. Compiles for the simulator, no Apple account
+# - check:      every push to main or a notis/** branch. Compiles for the simulator, no Apple account
 #               needed. Tells you whether the code builds.
 # - testflight: push to the `testflight` branch, or "Run workflow" on GitHub. Archives, signs
 #               and uploads to App Store Connect. Needs the secrets listed in docs/NOTIS-TESTFLIGHT.md.
@@ -9,6 +9,7 @@ name: iOS build & TestFlight
 on:
   push:
     branches:
+      - main
       - "notis/**"
       - testflight
   workflow_dispatch:
