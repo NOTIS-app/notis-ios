@@ -106,15 +106,6 @@ struct NotisSettingsView: View {
                   action: { showParentLink = true }
                 )
               }
-              // Required by the App Store. Not during a school lock: that would be a way out of it.
-              if !isSchoolLocked {
-                SettingsRow(
-                  icon: "trash",
-                  title: String(localized: "Mijn gegevens wissen"),
-                  subtitle: String(localized: "Haalt je school, naam, status en ouders weg bij NOTIS"),
-                  action: { showDeleteData = true }
-                )
-              }
             }
 
             accountCards
@@ -161,6 +152,19 @@ struct NotisSettingsView: View {
             title: String(localized: "Open-sourcelicenties"),
             action: { showLicenses = true }
           )
+
+          // Last on the screen, in red (the App Store requires it). Not during a school lock:
+          // that would be a way out of it.
+          if FeatureFlags.rooms && !isSchoolLocked {
+            SettingsRow(
+              icon: "trash",
+              iconColor: NotisPalette.light.error,
+              title: String(localized: "Mijn gegevens wissen"),
+              titleColor: NotisPalette.light.error,
+              subtitle: String(localized: "Haalt je school, naam, status en ouders weg bij NOTIS"),
+              action: { showDeleteData = true }
+            )
+          }
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 104)
@@ -539,6 +543,7 @@ private struct SettingsRow: View {
   let icon: String
   var iconColor: Color = NotisBrand.mandarinDark
   let title: String
+  var titleColor: Color = NotisBrand.ink
   var subtitle: String? = nil
   var subtitleColor: Color = NotisBrand.inkSoft
   var trailingSystemImage: String? = nil
@@ -562,7 +567,7 @@ private struct SettingsRow: View {
       VStack(alignment: .leading, spacing: 1) {
         Text(title)
           .font(.satoshi(16, .bold))
-          .foregroundStyle(NotisBrand.ink)
+          .foregroundStyle(titleColor)
         if let subtitle {
           Text(subtitle)
             .font(.satoshi(13))
