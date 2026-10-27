@@ -103,6 +103,8 @@ Een profiel is een lijst toegestane apps met een naam; elke steen start het prof
 
 - Uitgelogd: eerst "Ik ben ouder", dan "Ik ben docent".
 - "Ouder koppelen" toont de koppelcode ook als QR-code (`ParentLinkQR`, tekst `NOTIS-OUDER:<code>`, gelijk aan Android); "Kind toevoegen" heeft "QR-code scannen" (de bestaande QR-scanner van de app). Android en iPhone scannen elkaars code.
+- "Kind toevoegen" vraagt ook de naam van de ouder ("Mama"); het kind ziet die bij Instellingen (`guardian_name`, migratie `20261105000000_guardian_name.sql`; zonder migratie koppelt het zonder naam).
+- 🍎 Op Android is de lijst van een gekoppelde ouder het enige profiel van het kind, met de naam van de ouder. Op een iPhone kan een ouder geen app-lijst zetten (een iPhone geeft zijn apps niet door), dus houdt het kind zijn eigen profielen en ziet de ouder alleen de status.
 - Eén rode knop "Mijn gegevens wissen" onderaan. Met een ingelogde ouder verwijdert die ook het ouderaccount, na het typen van WISSEN. Docenten en NOTIS-beheerders zien de knop niet; een beheerder verwijdert hen. De aparte knop "Account verwijderen" staat achter `separateAccountDelete` (uit).
 
 ## Kan niet anders op iOS

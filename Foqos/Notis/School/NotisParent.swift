@@ -86,16 +86,32 @@ final class NotisParent {
     let p_child_name: String
   }
 
-  /// Redeems the code shown on the child's phone.
-  func linkChild(code: String, name: String) async throws {
+  private struct RedeemNamedParams: Encodable {
+    let p_code: String
+    let p_child_name: String
+    let p_guardian_name: String
+  }
+
+  /// Redeems the code shown on the child's phone. [parentName] is what the child's phone shows
+  /// for this parent ("Mama"); a server without migration 20261105000000_guardian_name.sql
+  /// links without it.
+  func linkChild(code: String, name: String, parentName: String) async throws {
+    let code = code.trimmingCharacters(in: .whitespaces).uppercased()
+    let name = name.trimmingCharacters(in: .whitespaces)
     do {
-      try await client.rpc(
-        "redeem_link_code",
-        params: RedeemParams(
-          p_code: code.trimmingCharacters(in: .whitespaces).uppercased(),
-          p_child_name: name.trimmingCharacters(in: .whitespaces)
-        )
-      ).execute()
+      do {
+        try await client.rpc(
+          "redeem_link_code",
+          params: RedeemNamedParams(
+            p_code: code, p_child_name: name,
+            p_guardian_name: String(parentName.trimmingCharacters(in: .whitespaces).prefix(40))
+          )
+        ).execute()
+      } catch where "\(error)".contains("PGRST202") {
+        try await client.rpc(
+          "redeem_link_code", params: RedeemParams(p_code: code, p_child_name: name)
+        ).execute()
+      }
     } catch {
       let text = "\(error)"
       if text.contains("Unknown or expired link code") { throw LinkError.codeInvalid }

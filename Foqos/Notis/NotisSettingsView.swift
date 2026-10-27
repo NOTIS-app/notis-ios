@@ -96,7 +96,7 @@ struct NotisSettingsView: View {
                 ForEach(school.guardians) { guardian in
                   SettingsRow(
                     icon: "figure.and.child.holdinghands",
-                    title: guardian.guardianEmail.isEmpty ? String(localized: "Ouder") : guardian.guardianEmail,
+                    title: guardian.displayName,
                     subtitle: String(localized: "Kan zien of NOTIS gelocked is"),
                     showsChevron: false,
                     onRemove: { unlinkingGuardian = guardian }

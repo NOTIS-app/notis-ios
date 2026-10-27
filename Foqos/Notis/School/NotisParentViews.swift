@@ -120,6 +120,7 @@ struct NotisAddChildSheet: View {
 
   @State private var code = ""
   @State private var name = ""
+  @State private var parentName = ""
   @State private var isBusy = false
   @State private var errorText: String?
   @State private var isScanning = false
@@ -145,6 +146,9 @@ struct NotisAddChildSheet: View {
         .autocorrectionDisabled()
       NotisTextField(title: "Naam van je kind", text: $name, isSecure: false)
         .textInputAutocapitalization(.words)
+      // Shown on the child's phone ("Mama").
+      NotisTextField(title: "Jouw naam, zoals je kind je noemt", text: $parentName, isSecure: false)
+        .textInputAutocapitalization(.words)
       if let errorText {
         Text(errorText).font(.satoshi(13)).foregroundStyle(.red)
       }
@@ -153,6 +157,7 @@ struct NotisAddChildSheet: View {
         isBusy: isBusy,
         isEnabled: !code.trimmingCharacters(in: .whitespaces).isEmpty
           && !name.trimmingCharacters(in: .whitespaces).isEmpty
+          && !parentName.trimmingCharacters(in: .whitespaces).isEmpty
       ) {
         Task { await link() }
       }
@@ -183,7 +188,7 @@ struct NotisAddChildSheet: View {
     isBusy = true
     errorText = nil
     do {
-      try await NotisParent.shared.linkChild(code: code, name: String(name.prefix(40)))
+      try await NotisParent.shared.linkChild(code: code, name: String(name.prefix(40)), parentName: parentName)
       onDone(true)
     } catch NotisParent.LinkError.codeInvalid {
       errorText = String(localized: "Deze code is onbekend of verlopen. Vraag om een nieuwe code.")
