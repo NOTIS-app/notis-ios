@@ -212,7 +212,7 @@ struct NotisTabsView: View {
       Group {
         switch tab {
         case .stones:
-          MijnNotisView()
+          if FeatureFlags.stoneProfiles { MijnNotisProfilesView() } else { MijnNotisView() }
         case .home:
           NotisHomeView(onPairFirstStone: { tab = .stones })
         case .settings:

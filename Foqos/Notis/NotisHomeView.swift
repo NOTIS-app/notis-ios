@@ -39,12 +39,34 @@ struct NotisHomeView: View {
   @AppStorage(NotisEmergencyUnlock.remainingKey) private var emergencyRemaining: Int =
     NotisEmergencyUnlock.maxPerSession
 
+  /// The profiles with at least one stone (without `FeatureFlags.stoneProfiles`: the stones).
   private var stones: [BlockedProfiles] {
     profiles.filter(\.isNotisStone)
   }
 
+  /// What the long-press offers: the profiles (you need a stone to unlock), or the stones.
+  private var lockChoices: [BlockedProfiles] {
+    guard FeatureFlags.stoneProfiles else { return stones }
+    // Lock by hand with the profile picked on Home; you need a stone to unlock.
+    if FeatureFlags.homeProfilePicker {
+      return stones.isEmpty ? [] : [selectedProfile].compactMap { $0 }
+    }
+    return stones.isEmpty ? [] : profiles.filter(\.isNotisProfile)
+  }
+
   private var isLocked: Bool {
     strategyManager.isBlocking
+  }
+
+  /// `FeatureFlags.homeProfilePicker`: the profile every stone locks with.
+  @AppStorage(BlockedProfiles.selectedNotisProfileKey) private var selectedProfileId = ""
+
+  private var notisProfiles: [BlockedProfiles] {
+    profiles.filter(\.isNotisProfile)
+  }
+
+  private var selectedProfile: BlockedProfiles? {
+    notisProfiles.first { $0.id.uuidString == selectedProfileId } ?? notisProfiles.first
   }
 
   private var isSchoolLocked: Bool {
@@ -116,6 +138,17 @@ struct NotisHomeView: View {
       }
       .scrollBounceBehavior(.basedOnSize)
 
+      if FeatureFlags.homeProfilePicker && !isLocked && !notisProfiles.isEmpty {
+        VStack {
+          NotisProfileBar(profiles: notisProfiles, selected: selectedProfile) { profile in
+            selectedProfileId = profile.id.uuidString
+          }
+          .padding(.horizontal, 32)
+          .padding(.top, 12)
+          Spacer()
+        }
+      }
+
       if isGracePeriod, let endsAt = graceEndsAt {
         VStack {
           Spacer()
@@ -151,7 +184,7 @@ struct NotisHomeView: View {
       .presentationBackground(NotisBrand.paper)
     }
     .sheet(isPresented: $showLockFromAppSheet) {
-      NotisLockFromAppSheet(stones: stones) { stone in
+      NotisLockFromAppSheet(choices: lockChoices) { stone in
         showLockFromAppSheet = false
         strategyManager.startNotisStoneWithoutScan(context: context, stone: stone)
       }
@@ -337,7 +370,13 @@ struct NotisHomeView: View {
             .foregroundStyle(showScanHint ? palette.primary : palette.onSurfaceVariant.opacity(0.6))
             .multilineTextAlignment(.center)
           if canChooseStone && !stones.isEmpty && !showScanHint {
-            Text("Of houd de steen ingedrukt om er een te kiezen")
+            Text(
+              FeatureFlags.homeProfilePicker
+                ? "Of houd de steen ingedrukt om handmatig op slot te gaan"
+                : FeatureFlags.stoneProfiles
+                  ? "Of houd de steen ingedrukt om een profiel te kiezen"
+                  : "Of houd de steen ingedrukt om er een te kiezen"
+            )
               .font(.satoshi(14))
               .foregroundStyle(palette.onSurfaceVariant.opacity(0.6))
               .multilineTextAlignment(.center)

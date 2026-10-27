@@ -35,8 +35,13 @@ class NotisStoneBlockingStrategy: BlockingStrategy {
     nfcScanner.onTagScanned = { tag in
       // The stone decides which app list applies, not the profile the caller passed in.
       if let stone = BlockedProfiles.findNotisStone(withTag: tag.id, in: context) {
-        self.nfcScanner.resultMessage = String(localized: "Apps op slot · met \(stone.name)")
-        self.lock(context: context, stone: stone, tag: tag.id)
+        let name = stone.notisStoneName(tag: tag.id) ?? stone.name
+        self.nfcScanner.resultMessage = String(localized: "Apps op slot · met \(name)")
+        // With the profile picked on Home, every stone locks with that one.
+        let profile =
+          FeatureFlags.homeProfilePicker
+          ? (BlockedProfiles.selectedNotisProfile(in: context) ?? stone) : stone
+        self.lock(context: context, stone: profile, tag: tag.id)
         return
       }
       if FeatureFlags.rooms {
@@ -51,7 +56,8 @@ class NotisStoneBlockingStrategy: BlockingStrategy {
     return nil
   }
 
-  /// "Op slot zonder tikken": locks with a stone chosen in the app. Unlocking still scans.
+  /// "Op slot zonder tikken": locks with a stone (with `FeatureFlags.stoneProfiles`: a profile)
+  /// chosen in the app. Unlocking still scans.
   func startWithoutScan(context: ModelContext, stone: BlockedProfiles) {
     lock(context: context, stone: stone, tag: stone.notisStoneTag ?? "")
   }
@@ -96,7 +102,8 @@ class NotisStoneBlockingStrategy: BlockingStrategy {
         self.nfcScanner.resultErrorMessage = String(localized: "Deze steen is niet gekoppeld")
         return
       }
-      self.nfcScanner.resultMessage = String(localized: "Apps weer vrij · met \(stone.name)")
+      let name = stone.notisStoneName(tag: tag.id) ?? stone.name
+      self.nfcScanner.resultMessage = String(localized: "Apps weer vrij · met \(name)")
       self.unlock(context: context, session: session)
     }
 

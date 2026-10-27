@@ -29,20 +29,21 @@ Afwijken mag alleen waar iOS geen keus laat. ✅ = aangepast in iOS, 🍎 = kan 
 | 15 | Teksten vrij: "Tik op de steen om te zien hoe het werkt" / "Koppel je NOTIS om te kunnen blokkeren" | eigen teksten | ✅ (🍎 op iOS start tikken ook de scan, dus de hint zegt dat) |
 | 16 | Na scannen een melding "Apps op slot" / "Apps weer vrij" | niets | ✅ in het NFC-venster van iOS |
 | 16a | Bedenktijd: 30 seconden na vergrendelen een ronde knop "Annuleren" met aflopende ring, op de plek van de noodknop | – | ✅ |
-| 16b | Steen ingedrukt houden → onderblad "Op slot met welke steen?" met je stenen (en klassen), hint "Of houd de steen ingedrukt om er een te kiezen"; ontgrendelen alleen met een steen | – | ✅ (klassen pas als `schoolLive` aan staat) |
+| 16b | Steen ingedrukt houden → onderblad "Op slot met welk profiel?" met je profielen (en klassen; alleen als je een steen hebt), hint "Of houd de steen ingedrukt om een profiel te kiezen"; ontgrendelen alleen met een steen | – | ✅ (klassen pas als `schoolLive` aan staat) |
 | 17 | Onbekende steen: "Deze steen is niet gekoppeld" | eigen tekst | ✅ |
 
 ## Mijn NOTIS
 
 | # | Android | iOS (was) | Status |
 |---|---|---|---|
-| 18 | Tab met kop "Mijn NOTIS" + "Elke NOTIS blokkeert zijn eigen apps" + (i)-knop met uitleg "Hoe werken de stenen?" | pop-up met lijst | ✅ |
-| 19 | Kaart per steen: kleine steen, naam, "3 apps toegestaan" / "Alles geblokkeerd", ⋮-menu (Hernoemen, Verwijderen); tik = apps wijzigen | lijst → detailscherm | ✅ |
+| 18 | Tab met kop "Mijn NOTIS" + "Je profielen en stenen" + (i)-knop met uitleg "Hoe werken de stenen?" ("Elke steen start een profiel") | pop-up met lijst | ✅ |
+| 19 | Kopje **Profielen**: kaart per profiel (apps-icoon, naam, "3 apps toegestaan" / "Alles geblokkeerd" / "Nu op slot", ⋮-menu Hernoemen, Verwijderen; tik = apps wijzigen), knop "Nieuw profiel" (naam, dan meteen de apps). Kopje **Stenen**: kaart per steen (kleine steen, naam, "Start <profiel>", ⋮-menu Hernoemen, Verwijderen; tik = onderblad "Profiel voor <steen>") | lijst → detailscherm | ✅ |
+| 19b | Profiel verwijderen: vraag "<naam> verwijderen?"; de stenen ervan starten voortaan het bovenste profiel; het laatste profiel blijft; niet tijdens een slot. Een steen verwijderen laat zijn profiel staan | – | ✅ |
 | 20 | Grote knop "Nieuwe NOTIS koppelen", geen maximum aantal stenen | klein knopje, geen max | ✅ |
 | 21 | Scankaart "Wachten op je NOTIS…" → "NOTIS gekoppeld!" | alleen iOS-venster | ✅ succeskaart na het scannen |
-| 22 | Nieuwe steen: onderblad "Je nieuwe NOTIS", naam, keuze "Nieuwe apps kiezen" / "Zelfde als X", knop "Apps kiezen" | formulier | ✅ |
+| 22 | Nieuwe steen: onderblad "Je nieuwe NOTIS", naam, "Welk profiel start deze steen?" met de profielen, knop "Koppelen". Zonder profiel: "Deze steen krijgt een nieuw profiel", knop "Apps kiezen" (nieuw profiel "Standaard") | formulier | ✅ |
 | 23 | Lege staat: kaart met grote steen, "Nog geen NOTIS gekoppeld" | tekstregel | ✅ |
-| 24 | Voettekst "Tik op een steen om de apps te wijzigen. Met elke steen kun je het slot weer openen." | ontbrak | ✅ |
+| 24 | Voettekst "Tik op een profiel om de apps te wijzigen, of op een steen om te kiezen welk profiel hij start. Met elke steen kun je het slot weer openen." | ontbrak | ✅ |
 | 25 | Steen "herschrijven" (NFC-gegevens opnieuw op de steen zetten) | – | 🍎 niet nodig: iOS leest alleen het chip-ID |
 
 ## App-keuze
@@ -69,7 +70,7 @@ Afwijken mag alleen waar iOS geen keus laat. ✅ = aangepast in iOS, 🍎 = kan 
 
 | # | Android | iOS (was) | Status |
 |---|---|---|---|
-| 34 | 4 stappen: Welkom ("Tik. Focus. Klaar.") → Toestemmingen → "Zo koppel je je NOTIS" (1 Tik bij Mijn NOTIS op Nieuwe NOTIS koppelen, 2 Geef je NOTIS een naam, 3 Kies de apps die jij wilt gebruiken; knop "Aan de slag" naar Home). De stappen Apps en scannen staan uit achter `onboardingApps` en `onboardingPairing` | geen onboarding | ✅ |
+| 34 | 4 stappen: Welkom ("Tik. Focus. Klaar.") → Toestemmingen → "Zo stel je je NOTIS in" (1 Maak bij Mijn NOTIS een profiel met de apps die je mag gebruiken, 2 Tik op Nieuwe NOTIS koppelen en houd je telefoon (iOS: iPhone) tegen je steen, 3 Kies welk profiel je steen start; knop "Aan de slag" naar Home). Er wordt geen leeg profiel vooraf gemaakt. De stappen Apps en scannen staan uit achter `onboardingApps` en `onboardingPairing` | geen onboarding | ✅ |
 | 35 | Toestemmingen: 3 Android-rechten | – | 🍎 iOS heeft er één: Schermtijd |
 | 36 | Eerste steen krijgt de apps van de app-stap (alleen als die stap aan staat) | – | ✅ (bewaard tot je de eerste steen koppelt) |
 
@@ -80,6 +81,23 @@ Afwijken mag alleen waar iOS geen keus laat. ✅ = aangepast in iOS, 🍎 = kan 
 | 37 | "Blijf gefocust!" / "<app> staat nu op slot. Tik met je telefoon op je NOTIS om hem weer vrij te geven." / "Oké" | "Even niet" / eigen tekst / "Terug" | ✅ |
 | 38 | Achtergrond inkt, knop mandarijn | idem | ✅ |
 | 39 | Melding tijdens sessie | Live Activity met Foqos-naam en -logo | ✅ NOTIS-naam, -logo en -kleur |
+
+## Profielen los van stenen (schakelaar `stoneProfiles`, Android `STONE_PROFILES`)
+
+Een profiel is een lijst toegestane apps met een naam; elke steen start het profiel dat je ervoor kiest.
+
+- **Opslag.** Een profiel is een `BlockedProfiles` met `NotisStoneBlockingStrategy` (het verborgen schoolprofiel niet meegeteld). De stenen van een profiel zijn zijn NFC-items (`physicalUnblockItems`, naam + chip-ID), dus een steen hoort altijd bij precies één profiel: het profiel dat hij start. Een andere keuze verplaatst het item. Zie `Foqos/Notis/BlockedProfiles+NotisProfiles.swift`. Android bewaart hetzelfde als `nfc_tags.profileId`.
+- **Scannen.** `findNotisStone(withTag:)` zoekt het profiel waar de steen in zit; de melding noemt de steen ("Apps op slot · met Bureau").
+- **Bestaande stenen.** Vroeger was elke steen een profiel met één item en dezelfde naam. Dat is nu een profiel met de naam van de steen en dezelfde apps, zonder migratie. Android geeft zijn verborgen lijsten bij de eerste start eenmalig de naam van hun steen, zodat beide er hetzelfde uitzien.
+- **Verschillen.** Geen: alleen de app-keuze gaat via Apple's eigen scherm. Op iOS is "Mijn NOTIS" tijdens een slot alleen-lezen (op Android is het tabblad dan verborgen). Schakelaar uit: het oude `MijnNotisView` met een lijst per steen.
+
+### Profiel kiezen op Home (schakelaar `homeProfilePicker`, Android `HOME_PROFILE_PICKER`)
+
+- Bovenaan Home een balk in de stijl van de navigatiebalk met het gekozen profiel (icoon, "Profiel", naam, pijltje); tik = lijst van profielen. 🍎 Op iOS een systeemmenu, op Android een uitklaplijst.
+- Elke gekoppelde steen gaat op slot met het gekozen profiel; elke steen ontgrendelt. Lang indrukken op de steen: "Handmatig op slot" met het gekozen profiel.
+- Stenen hebben geen eigen profiel meer: bij koppelen alleen een naam, op de kaart "Gekoppeld", tik = hernoemen.
+- De keuze staat in UserDefaults (`notis.selectedProfileId`); is dat profiel weg, dan geldt het bovenste.
+- Profielen hebben een icoon (12 vaste iconen, zelfde volgorde als Android), te kiezen in het blad "Nieuw profiel" / "Profiel bewerken". 🍎 Op iOS in UserDefaults (`notis.profileIcons`), omdat het Foqos-model er geen veld voor heeft; Android heeft de kolom `profiles.icon`.
 
 ## Kan niet anders op iOS
 

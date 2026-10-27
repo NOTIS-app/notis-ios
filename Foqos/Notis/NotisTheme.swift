@@ -123,6 +123,23 @@ struct NotisTonalButtonStyle: ButtonStyle {
   }
 }
 
+/// Android's OutlinedButton ("Nieuw profiel").
+struct NotisOutlinedButtonStyle: ButtonStyle {
+  @Environment(\.isEnabled) private var isEnabled
+
+  func makeBody(configuration: Configuration) -> some View {
+    configuration.label
+      .font(.satoshi(16, .bold))
+      .foregroundStyle(NotisBrand.mandarinDark.opacity(isEnabled ? 1 : 0.4))
+      .frame(maxWidth: .infinity, minHeight: 52)
+      .overlay(
+        Capsule().strokeBorder(NotisBrand.inkSoft.opacity(isEnabled ? 0.5 : 0.2), lineWidth: 1)
+      )
+      .contentShape(Capsule())
+      .opacity(configuration.isPressed ? 0.7 : 1)
+  }
+}
+
 /// Light card on paper with the website's thin line, as on Android.
 struct NotisCardModifier: ViewModifier {
   var radius: CGFloat = 18
