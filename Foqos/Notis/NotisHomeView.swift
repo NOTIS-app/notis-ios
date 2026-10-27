@@ -44,12 +44,17 @@ struct NotisHomeView: View {
     profiles.filter(\.isNotisStone)
   }
 
+  /// Can a stone end a lock? With `FeatureFlags.anyNotisStone` every NOTIS stone can.
+  private var canUnlock: Bool {
+    FeatureFlags.anyNotisStone || !stones.isEmpty
+  }
+
   /// What the long-press offers: the profiles (you need a stone to unlock), or the stones.
   private var lockChoices: [BlockedProfiles] {
     guard FeatureFlags.stoneProfiles else { return stones }
     // Lock by hand with the profile picked on Home; you need a stone to unlock.
     if FeatureFlags.homeProfilePicker {
-      return stones.isEmpty ? [] : [selectedProfile].compactMap { $0 }
+      return canUnlock ? [selectedProfile].compactMap { $0 } : []
     }
     return stones.isEmpty ? [] : profiles.filter(\.isNotisProfile)
   }
@@ -369,7 +374,7 @@ struct NotisHomeView: View {
             .font(.satoshi(14, showScanHint ? .medium : .regular))
             .foregroundStyle(showScanHint ? palette.primary : palette.onSurfaceVariant.opacity(0.6))
             .multilineTextAlignment(.center)
-          if canChooseStone && !stones.isEmpty && !showScanHint {
+          if canChooseStone && canUnlock && !showScanHint {
             Text(
               FeatureFlags.homeProfilePicker
                 ? "Of houd de steen ingedrukt om handmatig op slot te gaan"
@@ -402,7 +407,7 @@ struct NotisHomeView: View {
 
   private var freeHint: String {
     if showScanHint { return String(localized: "Houd de bovenkant van je iPhone tegen je NOTIS") }
-    if stones.isEmpty { return String(localized: "Koppel je NOTIS om te kunnen blokkeren") }
+    if !canUnlock { return String(localized: "Koppel je NOTIS om te kunnen blokkeren") }
     return String(localized: "Tik op de steen en houd je iPhone ertegen")
   }
 
@@ -463,7 +468,9 @@ struct NotisHomeView: View {
 
     // Rooms: also without own stones a tap scans, so a student can tap a school's stone.
     let schoolRoute = FeatureFlags.rooms ? (try? BlockedProfiles.notisSchoolProfile(in: context)) : nil
-    let route = stones.first ?? schoolRoute
+    // Every NOTIS stone: the picked profile routes to the NOTIS strategy; without one,
+    // "Mijn NOTIS" is where you make it.
+    let route = FeatureFlags.anyNotisStone ? (selectedProfile ?? schoolRoute) : (stones.first ?? schoolRoute)
     guard let route else {
       onPairFirstStone()
       return

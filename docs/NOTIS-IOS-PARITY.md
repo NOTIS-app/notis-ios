@@ -99,6 +99,12 @@ Een profiel is een lijst toegestane apps met een naam; elke steen start het prof
 - De keuze staat in UserDefaults (`notis.selectedProfileId`); is dat profiel weg, dan geldt het bovenste.
 - Profielen hebben een icoon (12 vaste iconen, zelfde volgorde als Android), te kiezen in het blad "Nieuw profiel" / "Profiel bewerken". 🍎 Op iOS in UserDefaults (`notis.profileIcons`), omdat het Foqos-model er geen veld voor heeft; Android heeft de kolom `profiles.icon`.
 
+### Geen koppelen (schakelaar `anyNotisStone`, Android `ANY_NOTIS_STONE`)
+
+- Elke steen met een geldig zegel "persoonlijk" (`StoneSeal`) zet op slot met het gekozen profiel en weer vrij, zonder koppelen. Mijn NOTIS toont alleen de profielen; "Nieuw profiel" is de hoofdknop (mandarijn).
+- Een schoolsteen gaat nooit op slot met je eigen profiel ("Dit is een schoolsteen: die zet je niet op slot met je eigen profiel"); een gewone NFC-chip geeft "Dit is geen NOTIS-steen". Eerder gekoppelde stenen blijven werken.
+- Productie blijft gelijk: "Stenen voorbereiden" schrijft het zegel, "Stenen koppelen" koppelt schoolstenen aan een lokaal.
+
 ## Kan niet anders op iOS
 
 - Scannen kan alleen nadat je in de app op de steen tikt (Android scant altijd op de achtergrond).

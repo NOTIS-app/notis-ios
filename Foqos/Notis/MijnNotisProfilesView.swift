@@ -84,73 +84,36 @@ struct MijnNotisProfilesView: View {
             }
           }
 
-          Button {
-            profileEdit = ProfileEdit(profile: nil)
-          } label: {
-            Label("Nieuw profiel", systemImage: "plus")
-          }
-          .buttonStyle(NotisOutlinedButtonStyle())
-          .disabled(isLocked)
-
-          sectionTitle("Stenen")
-            .padding(.top, 14)
-
-          if isPairingSuccess {
-            NotisPairedCard()
-              .transition(.scale(scale: 0.95).combined(with: .opacity))
-          }
-
-          if stones.isEmpty && !isPairingSuccess {
-            EmptyStonesCard()
-          }
-
-          ForEach(stones) { stone in
-            NotisItemCard(
-              name: stone.name,
-              subtitle: FeatureFlags.homeProfilePicker
-                ? String(localized: "Gekoppeld") : String(localized: "Start \(stone.profile.name)"),
-              highlight: false,
-              isLocked: isLocked,
-              // With the Home picker a stone has no profile of its own: tap renames it.
-              onOpen: {
-                if FeatureFlags.homeProfilePicker {
-                  nameText = stone.name
-                  stoneToRename = stone
-                } else {
-                  stoneForProfile = stone
-                }
-              },
-              renameLabel: "Hernoemen",
-              onRename: {
-                nameText = stone.name
-                stoneToRename = stone
-              },
-              onDelete: { removeStone(stone) }
-            ) {
-              NotisStoneGlyph(width: 52)
-            }
-          }
-
-          if !isPairingSuccess {
-            Button(action: startPairing) {
-              Label("Nieuwe NOTIS koppelen", systemImage: "plus")
+          if FeatureFlags.anyNotisStone {
+            // No pairing any more: this is the screen's main button.
+            Button {
+              profileEdit = ProfileEdit(profile: nil)
+            } label: {
+              Label("Nieuw profiel", systemImage: "plus")
             }
             .buttonStyle(NotisPrimaryButtonStyle())
             .disabled(isLocked)
             .padding(.top, 6)
-          }
 
-          if !stones.isEmpty {
             Text(
-              FeatureFlags.homeProfilePicker
-                ? "Tik op een profiel om de apps te wijzigen. Op Home kies je met welk profiel je stenen op slot gaan. Met elke steen kun je het slot weer openen."
-                : "Tik op een profiel om de apps te wijzigen, of op een steen om te kiezen welk profiel hij start. Met elke steen kun je het slot weer openen."
+              "Tik op een profiel om de apps te wijzigen. Op Home kies je met welk profiel je NOTIS op slot gaat. Elke NOTIS-steen zet op slot en weer vrij, koppelen hoeft niet."
             )
             .font(.satoshi(13))
             .foregroundStyle(NotisBrand.inkSoft)
             .padding(.horizontal, 4)
             .padding(.vertical, 4)
+          } else {
+            Button {
+              profileEdit = ProfileEdit(profile: nil)
+            } label: {
+              Label("Nieuw profiel", systemImage: "plus")
+            }
+            .buttonStyle(NotisOutlinedButtonStyle())
+            .disabled(isLocked)
+
+            stonesSection
           }
+
         }
         .padding(.horizontal, 16)
         .padding(.top, 16)
@@ -234,6 +197,69 @@ struct MijnNotisProfilesView: View {
     }
   }
 
+  /// The stones and the pair button (without `FeatureFlags.anyNotisStone`).
+  @ViewBuilder private var stonesSection: some View {
+    sectionTitle("Stenen")
+      .padding(.top, 14)
+
+    if isPairingSuccess {
+      NotisPairedCard()
+        .transition(.scale(scale: 0.95).combined(with: .opacity))
+    }
+
+    if stones.isEmpty && !isPairingSuccess {
+      EmptyStonesCard()
+    }
+
+    ForEach(stones) { stone in
+      NotisItemCard(
+        name: stone.name,
+        subtitle: FeatureFlags.homeProfilePicker
+          ? String(localized: "Gekoppeld") : String(localized: "Start \(stone.profile.name)"),
+        highlight: false,
+        isLocked: isLocked,
+        // With the Home picker a stone has no profile of its own: tap renames it.
+        onOpen: {
+          if FeatureFlags.homeProfilePicker {
+            nameText = stone.name
+            stoneToRename = stone
+          } else {
+            stoneForProfile = stone
+          }
+        },
+        renameLabel: "Hernoemen",
+        onRename: {
+          nameText = stone.name
+          stoneToRename = stone
+        },
+        onDelete: { removeStone(stone) }
+      ) {
+        NotisStoneGlyph(width: 52)
+      }
+    }
+
+    if !isPairingSuccess {
+      Button(action: startPairing) {
+        Label("Nieuwe NOTIS koppelen", systemImage: "plus")
+      }
+      .buttonStyle(NotisPrimaryButtonStyle())
+      .disabled(isLocked)
+      .padding(.top, 6)
+    }
+
+    if !stones.isEmpty {
+      Text(
+        FeatureFlags.homeProfilePicker
+          ? "Tik op een profiel om de apps te wijzigen. Op Home kies je met welk profiel je stenen op slot gaan. Met elke steen kun je het slot weer openen."
+          : "Tik op een profiel om de apps te wijzigen, of op een steen om te kiezen welk profiel hij start. Met elke steen kun je het slot weer openen."
+      )
+      .font(.satoshi(13))
+      .foregroundStyle(NotisBrand.inkSoft)
+      .padding(.horizontal, 4)
+      .padding(.vertical, 4)
+    }
+  }
+
   private var header: some View {
     HStack(alignment: .center, spacing: 4) {
       VStack(alignment: .leading, spacing: 2) {
@@ -241,7 +267,7 @@ struct MijnNotisProfilesView: View {
           .font(.satoshi(28, .bold))
           .tracking(-0.5)
           .foregroundStyle(NotisBrand.ink)
-        Text("Je profielen en stenen")
+        Text(FeatureFlags.anyNotisStone ? "Je profielen" : "Je profielen en stenen")
           .font(.satoshi(14))
           .foregroundStyle(NotisBrand.inkSoft)
       }
