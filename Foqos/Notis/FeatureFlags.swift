@@ -78,6 +78,10 @@ enum FeatureFlags {
   /// phone: the device activity monitor starts the lock, also with the app closed.
   /// Mirrors `FeatureFlags.BEDTIME_LOCK` on Android.
   static let bedtimeLock = true
+
+  /// While locked, a bar at the top of Home says with what: the profile, or the school and room.
+  /// Replaces "met <naam>" under OP SLOT. Mirrors `FeatureFlags.LOCKED_WITH_BAR` on Android.
+  static let lockedWithBar = true
 }
 
 enum NotisDevice {

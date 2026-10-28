@@ -50,3 +50,33 @@ struct NotisProfileBar: View {
     .accessibilityLabel("Profiel kiezen")
   }
 }
+
+/// While locked (`FeatureFlags.lockedWithBar`): what the phone is locked with, in the same capsule
+/// as `NotisProfileBar`, without a menu. As Android's `LockedBar`.
+struct NotisLockedBar: View {
+  let label: String
+  let name: String
+  let icon: NotisProfileIcon
+  let palette: NotisPalette
+
+  var body: some View {
+    HStack(spacing: 12) {
+      NotisProfileGlyph(icon: icon, size: 40)
+      VStack(alignment: .leading, spacing: 0) {
+        Text(label)
+          .font(.satoshi(11))
+          .foregroundStyle(palette.onSurfaceVariant)
+        Text(name)
+          .font(.satoshi(16, .bold))
+          .foregroundStyle(palette.onSurface)
+          .lineLimit(1)
+      }
+      Spacer(minLength: 0)
+    }
+    .padding(.leading, 8)
+    .padding(.trailing, 16)
+    .padding(.vertical, 8)
+    .background(Capsule().fill(palette.surfaceContainer.opacity(0.95)))
+    .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
+  }
+}
