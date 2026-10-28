@@ -164,7 +164,7 @@ struct MijnNotisProfilesView: View {
     }
     .sheet(isPresented: $showHelp) {
       StonesHelpSheet { showHelp = false }
-        .presentationDetents([.height(440)])
+        .presentationDetents([.height(StonesHelpSheet.explainsBedtime ? 560 : 440)])
         .presentationBackground(NotisBrand.boneLight)
     }
     .alert(
