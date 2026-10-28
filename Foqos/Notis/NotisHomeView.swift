@@ -335,11 +335,15 @@ struct NotisHomeView: View {
           requestAuthorizer.requestAuthorization()
         }
       } else {
-        Text(statusWord)
-          .font(.satoshi(44, .bold))
-          .tracking(-1)
-          .foregroundStyle(palette.onSurface)
-          .multilineTextAlignment(.center)
+        if FeatureFlags.homeLockGlyph && !isEmergencyActive {
+          NotisLockGlyph(isLocked: isLocked, color: palette.onSurface)
+        } else {
+          Text(statusWord)
+            .font(.satoshi(44, .bold))
+            .tracking(-1)
+            .foregroundStyle(palette.onSurface)
+            .multilineTextAlignment(.center)
+        }
 
         if !FeatureFlags.lockedWithBar, isInkLocked, let name = lockingName {
           Text("met \(name)")
@@ -385,17 +389,23 @@ struct NotisHomeView: View {
               .monospacedDigit()
               .foregroundStyle(palette.onSurface.opacity(0.7))
           }
-          Text(showScanHint ? "Houd de bovenkant van je iPhone tegen je NOTIS" : "Tik op de steen om te ontgrendelen")
-            .font(.satoshi(14, showScanHint ? .medium : .regular))
-            .foregroundStyle(showScanHint ? palette.primary : palette.onSurfaceVariant.opacity(0.6))
-            .multilineTextAlignment(.center)
-            .padding(.top, 16)
+          // With the padlock only the scan hint after a tap.
+          if !FeatureFlags.homeLockGlyph || showScanHint {
+            Text(showScanHint ? "Houd de bovenkant van je iPhone tegen je NOTIS" : "Tik op de steen om te ontgrendelen")
+              .font(.satoshi(14, showScanHint ? .medium : .regular))
+              .foregroundStyle(showScanHint ? palette.primary : palette.onSurfaceVariant.opacity(0.6))
+              .multilineTextAlignment(.center)
+              .padding(.top, 16)
+          }
         } else {
-          Text(freeHint)
-            .font(.satoshi(14, showScanHint ? .medium : .regular))
-            .foregroundStyle(showScanHint ? palette.primary : palette.onSurfaceVariant.opacity(0.6))
-            .multilineTextAlignment(.center)
-          if canChooseStone && canUnlock && !showScanHint {
+          // With the padlock only the scan hint after a tap, or the call to link a stone.
+          if !FeatureFlags.homeLockGlyph || showScanHint || !canUnlock {
+            Text(freeHint)
+              .font(.satoshi(14, showScanHint ? .medium : .regular))
+              .foregroundStyle(showScanHint ? palette.primary : palette.onSurfaceVariant.opacity(0.6))
+              .multilineTextAlignment(.center)
+          }
+          if !FeatureFlags.homeLockGlyph && canChooseStone && canUnlock && !showScanHint {
             Text(
               FeatureFlags.homeProfilePicker
                 ? "Of houd de steen ingedrukt om handmatig op slot te gaan"
