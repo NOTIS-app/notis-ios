@@ -314,6 +314,38 @@ final class NotisSchool: ObservableObject {
     }
   }
 
+  // MARK: - Checkout after the last lesson (`FeatureFlags.roomCheckout`)
+
+  /// Whether the teacher opened the checkout of the room this phone is checked in to. Needs the
+  /// network; false when offline. Asked before the unlock clears the check-in.
+  func isCheckoutOpen() async -> Bool {
+    do {
+      try await SchoolBackend.ensureStudentSignedIn()
+      let open: Bool = try await client.rpc("my_checkout_open").execute().value
+      return open
+    } catch {
+      print("NotisSchool isCheckoutOpen failed: \(error)")
+      return false
+    }
+  }
+
+  /// The day (yyyy-MM-dd) this phone checked out for: school stones don't lock it that day.
+  var checkedOutDay: String? {
+    get { defaults.string(forKey: "notis.school.checkedOutDay") }
+    set { defaults.set(newValue, forKey: "notis.school.checkedOutDay") }
+  }
+
+  static var today: String {
+    let formatter = DateFormatter()
+    formatter.calendar = Calendar(identifier: .gregorian)
+    formatter.dateFormat = "yyyy-MM-dd"
+    return formatter.string(from: Date())
+  }
+
+  var isCheckedOutToday: Bool {
+    FeatureFlags.roomCheckout && checkedOutDay == Self.today
+  }
+
   // MARK: - App choice (8c)
 
   /// The teacher pressed "Keuze openen" for the room this phone is checked in to.

@@ -82,6 +82,11 @@ enum FeatureFlags {
   /// While locked, a bar at the top of Home says with what: the profile, or the school and room.
   /// Replaces "met <naam>" under OP SLOT. Mirrors `FeatureFlags.LOCKED_WITH_BAR` on Android.
   static let lockedWithBar = true
+
+  /// "Laatste les: uitchecken": a teacher opens the checkout of their room for 10 minutes; a
+  /// student who taps the room's stone in that time is unlocked and checked out for the rest of
+  /// the day (school stones don't lock again until tomorrow). Mirrors `FeatureFlags.ROOM_CHECKOUT`.
+  static let roomCheckout = true
 }
 
 enum NotisDevice {

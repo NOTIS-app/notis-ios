@@ -113,6 +113,11 @@ Een profiel is een lijst toegestane apps met een naam; elke steen start het prof
 - 🍎 Op Android is de lijst van een gekoppelde ouder het enige profiel van het kind, met de naam van de ouder. Op een iPhone kan een ouder geen app-lijst zetten (een iPhone geeft zijn apps niet door), dus houdt het kind zijn eigen profielen en ziet de ouder alleen de status.
 - Eén rode knop "Mijn gegevens wissen" onderaan. Met een ingelogde ouder verwijdert die ook het ouderaccount, na het typen van WISSEN. Docenten en NOTIS-beheerders zien de knop niet; een beheerder verwijdert hen. De aparte knop "Account verwijderen" staat achter `separateAccountDelete` (uit).
 
+## Laatste les: uitchecken (schakelaar `roomCheckout`, Android `ROOM_CHECKOUT`)
+
+- Docent: in de lijst van het lokaal "Laatste les: uitchecken", met een bevestiging; ook op de docentenpagina. Opent 10 minuten (`open_checkout`, migratie `20261106000000_room_checkout.sql`).
+- Leerling: tikt in die tijd de steen van het lokaal waar hij is ingecheckt (`my_checkout_open`, gevraagd vóór het ontgrendelen) en is uitgecheckt voor de dag: schoolstenen zetten hem vandaag niet meer op slot. 🍎 De melding daarvan komt als venster na het NFC-blad.
+
 ## Waarmee op slot (schakelaar `lockedWithBar`, Android `LOCKED_WITH_BAR`)
 
 - Op slot staat bovenaan Home een balk zoals de profielbalk: "Op slot met profiel · Werk" of "Op slot door school · <school> · <lokaal>". Vervangt "met <naam>" onder OP SLOT. 🍎 Geen ouderregel: een iPhone krijgt geen app-lijst van een ouder.

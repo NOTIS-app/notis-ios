@@ -157,6 +157,12 @@ class NotisStoneBlockingStrategy: BlockingStrategy {
     MainActor.assumeIsolated {
       let school = NotisSchool.shared
       if let room = school.roomFor(uid: uid) {
+        // Checked out after the last lesson: the school's stones don't lock again today.
+        if school.isCheckedOutToday {
+          nfcScanner.resultErrorMessage = String(
+            localized: "Je bent vandaag uitgecheckt: de stenen van school zetten je pas morgen weer op slot")
+          return
+        }
         nfcScanner.resultMessage = String(localized: "Apps op slot · in \(room.roomName)")
         lockSchool(context: context, room: room)
         return
@@ -191,12 +197,30 @@ class NotisStoneBlockingStrategy: BlockingStrategy {
       guard let room = school.roomFor(uid: uid) else { return false }
 
       if !session.blockedProfile.isNotisSchoolProfile {
+        // Checked out for today: an own lock stays, the school's stone doesn't take it over.
+        if school.isCheckedOutToday {
+          nfcScanner.resultErrorMessage = String(
+            localized: "Je bent vandaag uitgecheckt: de stenen van school zetten je pas morgen weer op slot")
+          return true
+        }
         nfcScanner.resultMessage = String(localized: "Apps op slot · in \(room.roomName)")
         unlock(context: context, session: session)
         lockSchool(context: context, room: room)
       } else if school.currentRoomId == room.roomId {
         nfcScanner.resultMessage = String(localized: "Apps weer vrij · in \(room.roomName)")
-        unlock(context: context, session: session)
+        if FeatureFlags.roomCheckout {
+          // Asked before the unlock: it clears the check-in the server looks at.
+          Task { @MainActor in
+            let forDay = await school.isCheckoutOpen()
+            self.unlock(context: context, session: session)
+            if forDay {
+              school.checkedOutDay = NotisSchool.today
+              self.onErrorMessage?(String(localized: "Weer vrij · uitgecheckt voor vandaag"))
+            }
+          }
+        } else {
+          unlock(context: context, session: session)
+        }
       } else {
         nfcScanner.resultMessage = String(localized: "Ingecheckt in \(room.roomName)")
         school.currentRoomId = room.roomId

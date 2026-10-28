@@ -231,6 +231,18 @@ final class NotisTeacher: ObservableObject {
     }
   }
 
+  /// "Laatste les: uitchecken": the students here have 10 minutes to tap the stone and check
+  /// out for the day. Returns until when; nil when it failed.
+  func openCheckout(in room: TeacherRoom) async -> Date? {
+    do {
+      return try await client.rpc("open_checkout", params: ChoiceParams(p_room_id: room.id, p_minutes: 10))
+        .execute().value
+    } catch {
+      print("NotisTeacher openCheckout failed: \(error)")
+      return nil
+    }
+  }
+
   // MARK: - Recovery code
 
   /// Signs in again with [password] (the server only gives the code right after that), then

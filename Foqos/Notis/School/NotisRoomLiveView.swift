@@ -11,6 +11,8 @@ struct NotisRoomLiveView: View {
   @State private var students: [RoomStudent]?
   @State private var isOffline = false
   @State private var choiceOpenUntil: Date?
+  @State private var checkoutOpenUntil: Date?
+  @State private var confirmCheckout = false
 
   /// A phone silent for longer than this shows "geen contact", as on Android.
   private static let staleAfter: TimeInterval = 45 * 60
@@ -108,6 +110,30 @@ struct NotisRoomLiveView: View {
             Text("Open tot \(choiceOpenUntil.formatted(date: .omitted, time: .shortened))")
               .font(.satoshi(13))
               .foregroundStyle(NotisBrand.inkSoft)
+          }
+        }
+
+        // After the last lesson: 10 minutes to tap the stone and check out for the day.
+        if FeatureFlags.roomCheckout {
+          HStack(spacing: 8) {
+            Button("Laatste les: uitchecken") { confirmCheckout = true }
+              .font(.satoshi(15, .bold))
+              .foregroundStyle(NotisBrand.mandarinDark)
+            if let checkoutOpenUntil {
+              Text("Open tot \(checkoutOpenUntil.formatted(date: .omitted, time: .shortened))")
+                .font(.satoshi(13))
+                .foregroundStyle(NotisBrand.inkSoft)
+            }
+          }
+          .alert("Uitchecken voor vandaag?", isPresented: $confirmCheckout) {
+            Button("Uitchecken openen") {
+              Task { checkoutOpenUntil = await teacher.openCheckout(in: room) }
+            }
+            Button("Annuleren", role: .cancel) {}
+          } message: {
+            Text(
+              "De leerlingen die in \(room.name) zijn ingecheckt, kunnen 10 minuten lang de steen van dit lokaal tikken: hun telefoon gaat dan van het slot en de stenen van school zetten hem vandaag niet meer op slot."
+            )
           }
         }
 
