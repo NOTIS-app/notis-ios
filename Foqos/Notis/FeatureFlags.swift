@@ -66,6 +66,12 @@ enum FeatureFlags {
   /// signed-in parent's account as well, after typing the confirm word.
   /// Mirrors `FeatureFlags.SEPARATE_ACCOUNT_DELETE` on Android.
   static let separateAccountDelete = false
+
+  /// No pairing: every stone with a valid personal seal (`sealedStones`) locks with the profile
+  /// picked on Home and unlocks again. "Mijn NOTIS" only lists the profiles. Stones paired
+  /// before keep working. A school stone never locks with an own profile. Off: only paired
+  /// stones work. Needs `homeProfilePicker`. Mirrors `FeatureFlags.ANY_NOTIS_STONE` on Android.
+  static let anyNotisStone = true
 }
 
 enum NotisDevice {
