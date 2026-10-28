@@ -27,6 +27,9 @@ enum NotisBedtime {
   static let weekdays = 0b0011111
   static let weekend = 0b1100000
 
+  /// At most this many evening lock times, as on Android.
+  static let maxAlarms = 5
+
   private static let key = "notis.bedtimeAlarms"
 
   /// Monday first, as the day chips show them.

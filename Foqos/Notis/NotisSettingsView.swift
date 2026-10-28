@@ -295,7 +295,7 @@ struct NotisSettingsView: View {
     }
     .alert(String(localized: "Mijn gegevens wissen"), isPresented: $showDeleteData) {
       if deletesAccount {
-        TextField("Typ WISSEN om te bevestigen", text: $deleteWord)
+        TextField("Typ \(Self.deleteWord) om te bevestigen", text: $deleteWord)
           .textInputAutocapitalization(.characters)
       }
       Button("Wissen", role: .destructive, action: deleteMyData)
@@ -314,7 +314,7 @@ struct NotisSettingsView: View {
     .alert(String(localized: "Er is niets gewist"), isPresented: $deleteWordWrong) {
       Button("OK", role: .cancel) {}
     } message: {
-      Text("Typ WISSEN om te bevestigen dat ook je account weg mag.")
+      Text("Typ \(Self.deleteWord) om te bevestigen dat ook je account weg mag.")
     }
     .alert(String(localized: "Account verwijderen"), isPresented: $showDeleteAccount) {
       Button("Verwijderen", role: .destructive) {
@@ -357,25 +357,25 @@ struct NotisSettingsView: View {
 
   /// Android's notifications `ActionCard`, alone on its row because the theme picker is off.
   private var notificationsCard: some View {
-    VStack(alignment: .leading, spacing: 0) {
-      HStack(alignment: .top) {
-        SettingsIcon(systemName: "bell")
-        Spacer()
-        Toggle("", isOn: $notificationsEnabled)
-          .labelsHidden()
-          .tint(NotisBrand.mandarinDark)
-          .scaleEffect(0.85, anchor: .topTrailing)
+    // Alone on its row: the text beside the icon, as on Android.
+    HStack(spacing: 12) {
+      SettingsIcon(systemName: "bell")
+      VStack(alignment: .leading, spacing: 2) {
+        Text("Meldingen")
+          .font(.satoshi(16, .bold))
+          .foregroundStyle(NotisBrand.ink)
+        Text(notificationsEnabled ? "Aan" : "Uit")
+          .font(.satoshi(13))
+          .foregroundStyle(notificationsEnabled ? NotisBrand.mandarinDark : NotisBrand.inkSoft)
       }
-      Spacer(minLength: 12)
-      Text("Meldingen")
-        .font(.satoshi(16, .bold))
-        .foregroundStyle(NotisBrand.ink)
-      Text(notificationsEnabled ? "Aan" : "Uit")
-        .font(.satoshi(13))
-        .foregroundStyle(notificationsEnabled ? NotisBrand.mandarinDark : NotisBrand.inkSoft)
+      Spacer(minLength: 0)
+      Toggle("", isOn: $notificationsEnabled)
+        .labelsHidden()
+        .tint(NotisBrand.mandarinDark)
+        .scaleEffect(0.85)
     }
     .padding(14)
-    .frame(maxWidth: .infinity, minHeight: 130, alignment: .topLeading)
+    .frame(maxWidth: .infinity, alignment: .leading)
     .notisCard()
   }
 
@@ -395,6 +395,10 @@ struct NotisSettingsView: View {
     if let fresh = try? await NotisParent.shared.children() { children = fresh }
   }
 
+  /// The word to type before an account goes. The iOS app is Dutch only, so it asks WISSEN;
+  /// DELETE (what Android asks in English) is accepted too.
+  private static let deleteWord = "WISSEN"
+
   /// "Mijn gegevens wissen" also deletes a signed-in parent's account.
   private var deletesAccount: Bool {
     !FeatureFlags.separateAccountDelete && teacher.role == .parent
@@ -404,7 +408,7 @@ struct NotisSettingsView: View {
   private func deleteMyData() {
     let withAccount = deletesAccount
     if withAccount
-      && deleteWord.trimmingCharacters(in: .whitespaces).caseInsensitiveCompare("WISSEN") != .orderedSame
+      && !["WISSEN", "DELETE"].contains(deleteWord.trimmingCharacters(in: .whitespaces).uppercased())
     {
       deleteWordWrong = true
       return

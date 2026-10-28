@@ -19,8 +19,13 @@ struct NotisBedtimeSheet: View {
     allProfiles.filter(\.isNotisProfile)
   }
 
+  private var atMax: Bool {
+    alarms.count >= NotisBedtime.maxAlarms
+  }
+
+  /// No new time: the maximum is reached, or every day already has one.
   private var allTaken: Bool {
-    NotisBedtime.takenDays(alarms, exceptId: nil) == NotisBedtime.allDays
+    atMax || NotisBedtime.takenDays(alarms, exceptId: nil) == NotisBedtime.allDays
   }
 
   var body: some View {
@@ -31,6 +36,12 @@ struct NotisBedtimeSheet: View {
             .font(.satoshi(14))
             .foregroundStyle(NotisBrand.inkSoft)
             .padding(.bottom, 4)
+
+          if atMax {
+            Text("Maximaal \(NotisBedtime.maxAlarms) tijden.")
+              .font(.satoshi(13))
+              .foregroundStyle(NotisBrand.inkSoft)
+          }
 
           if alarms.isEmpty {
             Text("Nog geen avondslot. Tik op + om een tijd te kiezen.")
