@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 import UIKit
 
@@ -135,11 +136,14 @@ enum NotisTab: Hashable {
 /// Android's `FloatingNavBar`: a pill at the bottom, My NOTIS · Home · Settings.
 struct NotisNavBar: View {
   @Binding var selection: NotisTab
+  /// Reports the pill's height, for views that line up with it (the week stats sheet).
+  var onPillHeight: (CGFloat) -> Void = { _ in }
 
   var body: some View {
     HStack(spacing: 0) {
-      // `FeatureFlags.anyNotisStone`: no stones to manage, so the tab holds only the profiles.
-      if FeatureFlags.anyNotisStone {
+      // `FeatureFlags.anyNotisStone`: no stones to manage, so the tab holds only the profiles
+      // (and, with `FeatureFlags.bedtimeInMyNotis`, the evening lock: "Mijn NOTIS" again).
+      if FeatureFlags.anyNotisStone && !FeatureFlags.bedtimeInMyNotis {
         item(.stones, label: "Profielen", icon: "square.grid.2x2", selectedIcon: "square.grid.2x2.fill")
       } else {
         item(.stones, label: "Mijn NOTIS", icon: "wave.3.right.circle", selectedIcon: "wave.3.right.circle.fill")
@@ -150,6 +154,7 @@ struct NotisNavBar: View {
     .padding(8)
     .background(Capsule().fill(NotisBrand.boneLight.opacity(0.95)))
     .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
+    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { onPillHeight($0) }
     .padding(.horizontal, 32)
     .padding(.bottom, 8)
   }
@@ -203,6 +208,9 @@ struct NotisTabsView: View {
   @EnvironmentObject private var requestAuthorizer: RequestAuthorizer
 
   @State private var tab: NotisTab = .home
+  @Query(sort: \BlockedProfileSession.startTime) private var sessions: [BlockedProfileSession]
+  @State private var isStatsExpanded = false
+  @State private var navPillHeight: CGFloat = 0
   @AppStorage(NotisEmergencyUnlock.endsAtKey) private var emergencyEndsAt: Double = 0
 
   private var isEmergencyActive: Bool {
@@ -212,6 +220,12 @@ struct NotisTabsView: View {
   /// Android hides the bar while locked, except during the emergency pause.
   private var showsNavBar: Bool {
     !strategyManager.isBlocking || isEmergencyActive
+  }
+
+  /// `FeatureFlags.homeStats`: on Home while free, once there is a finished session.
+  private var showsStats: Bool {
+    FeatureFlags.homeStats && tab == .home && !strategyManager.isBlocking && navPillHeight > 0
+      && sessions.contains { $0.endTime != nil }
   }
 
   var body: some View {
@@ -228,16 +242,37 @@ struct NotisTabsView: View {
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 
+      // Open week stats: a tap anywhere outside the sheet closes it (the nav bar still works).
+      if showsStats && isStatsExpanded {
+        Color.clear
+          .contentShape(Rectangle())
+          .ignoresSafeArea()
+          .onTapGesture {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { isStatsExpanded = false }
+          }
+      }
+
+      // Week stats: grows out of the nav bar, which is drawn on top of its foot.
+      if showsStats {
+        NotisWeekStatsSheet(sessions: sessions, isExpanded: $isStatsExpanded, pillHeight: navPillHeight)
+          .transition(.opacity)
+      }
+
       if showsNavBar {
-        NotisNavBar(selection: $tab)
+        NotisNavBar(selection: $tab, onPillHeight: { navPillHeight = $0 })
           .transition(.move(edge: .bottom).combined(with: .opacity))
       }
     }
     .animation(.spring(response: 0.5, dampingFraction: 0.8), value: showsNavBar)
     // Light status bar text on the ink screen, dark text everywhere else.
     .preferredColorScheme(strategyManager.isBlocking && !isEmergencyActive ? .dark : .light)
-    .onChange(of: strategyManager.isBlocking) { _, isBlocking in
+    .onChange(of: strategyManager.isBlocking) { wasBlocking, isBlocking in
       if isBlocking { tab = .home }
+      // Just unlocked: show how the week is going.
+      if wasBlocking && !isBlocking { isStatsExpanded = true }
+    }
+    .onChange(of: tab) { _, tab in
+      if tab != .home { isStatsExpanded = false }
     }
     // The evening lock's activities follow the profiles (one may be gone); unchanged ones stay.
     .task { NotisBedtime.rearm(in: context) }

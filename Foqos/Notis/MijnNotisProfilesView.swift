@@ -17,6 +17,9 @@ struct MijnNotisProfilesView: View {
   ]) private var allProfiles: [BlockedProfiles]
 
   @State private var scanner = NFCScannerUtil()
+  @State private var showBedtime = false
+  /// Re-read when the evening lock sheet closes.
+  @State private var bedtimeAlarms = NotisBedtime.load()
   @State private var isPairingSuccess = false
   @State private var newStone: PairingTag?
   @State private var pendingTag: String?
@@ -58,6 +61,12 @@ struct MijnNotisProfilesView: View {
         VStack(alignment: .leading, spacing: 10) {
           header
             .padding(.bottom, 8)
+
+          // `FeatureFlags.bedtimeInMyNotis`: the evening lock heads the screen, the profiles follow.
+          if FeatureFlags.bedtimeLock && FeatureFlags.bedtimeInMyNotis {
+            bedtimeButton
+              .padding(.bottom, 6)
+          }
 
           // Without stones on this screen, the section title would repeat the screen's.
           if !FeatureFlags.anyNotisStone {
@@ -125,6 +134,9 @@ struct MijnNotisProfilesView: View {
         .padding(.bottom, 104)
         .animation(.easeInOut(duration: 0.3), value: isPairingSuccess)
       }
+    }
+    .sheet(isPresented: $showBedtime, onDismiss: { bedtimeAlarms = NotisBedtime.load() }) {
+      NotisBedtimeSheet()
     }
     .sheet(item: $newStone, onDismiss: finishNewStone) { pairing in
       NewStoneProfileSheet(
@@ -265,10 +277,22 @@ struct MijnNotisProfilesView: View {
     }
   }
 
+  /// "Avondslot" as the orange button, with the times that are on; opens the lock times.
+  private var bedtimeButton: some View {
+    let on = bedtimeAlarms.filter(\.enabled).map(\.timeText).joined(separator: " · ")
+    return Button {
+      showBedtime = true
+    } label: {
+      Label(on.isEmpty ? "Avondslot" : "Avondslot · \(on)", systemImage: "moon")
+        .lineLimit(1)
+    }
+    .buttonStyle(NotisPrimaryButtonStyle())
+  }
+
   private var header: some View {
     HStack(alignment: .center, spacing: 4) {
       VStack(alignment: .leading, spacing: 2) {
-        Text(FeatureFlags.anyNotisStone ? "Profielen" : "Mijn NOTIS")
+        Text(FeatureFlags.anyNotisStone && !FeatureFlags.bedtimeInMyNotis ? "Profielen" : "Mijn NOTIS")
           .font(.satoshi(28, .bold))
           .tracking(-0.5)
           .foregroundStyle(NotisBrand.ink)

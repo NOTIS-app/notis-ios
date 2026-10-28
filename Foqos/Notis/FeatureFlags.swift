@@ -105,6 +105,17 @@ enum FeatureFlags {
   /// Less text: no explanation under the profiles list, and no grey line under "Ouder koppelen",
   /// "Ik ben ouder" and "Ik ben docent" in Settings. Mirrors `FeatureFlags.LESS_TEXT` on Android.
   static let lessText = true
+
+  /// Home shows this week with the nav bar: closed, a low strip with the handle and the streak
+  /// grows out of it; opened (tap, drag up, or right after unlocking) the strip rises with the week
+  /// total, the streak and a bar per day. A tap outside closes it. Mirrors
+  /// `FeatureFlags.HOME_STATS` on Android.
+  static let homeStats = true
+
+  /// The evening lock moves from Settings to the profiles tab, which is called "Mijn NOTIS" again:
+  /// an orange "Avondslot" button at the top opens the lock times, the profiles follow below.
+  /// Needs `bedtimeLock`. Mirrors `FeatureFlags.BEDTIME_IN_MY_NOTIS` on Android.
+  static let bedtimeInMyNotis = true
 }
 
 enum NotisDevice {

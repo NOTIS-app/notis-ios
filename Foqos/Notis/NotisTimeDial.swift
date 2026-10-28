@@ -201,7 +201,8 @@ struct NotisTimeDial<Centre: View>: View {
   }
 
   private func point(_ minute: Int, _ r: CGFloat, _ c: CGPoint) -> CGPoint {
-    let radians = Double(minute) / Double(NotisTimeDialMath.day) * 2 * .pi
+    // CGFloat throughout: with a Double angle, `r * sin(…)` is ambiguous between overloads.
+    let radians = CGFloat(minute) / CGFloat(NotisTimeDialMath.day) * 2 * .pi
     return CGPoint(x: c.x + r * sin(radians), y: c.y - r * cos(radians))
   }
 }

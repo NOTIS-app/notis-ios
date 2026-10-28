@@ -21,7 +21,7 @@ struct NotisLockFromAppSheet: View {
         Text(
           choices.isEmpty
             ? (FeatureFlags.anyNotisStone
-              ? "Je hebt nog geen profiel. Maak er eerst een bij Profielen."
+              ? "Je hebt nog geen profiel. Maak er eerst een bij Mijn NOTIS."
               : "Je hebt nog geen steen gekoppeld. Koppel er eerst een bij Mijn NOTIS.")
             : FeatureFlags.homeProfilePicker
               ? "Je telefoon gaat op slot met het profiel dat je hebt gekozen. Weer vrij geven kan alleen door je telefoon tegen een NOTIS te houden."

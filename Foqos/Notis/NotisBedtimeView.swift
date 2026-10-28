@@ -24,11 +24,6 @@ struct NotisBedtimeSheet: View {
     NavigationStack {
       ScrollView {
         VStack(alignment: .leading, spacing: 10) {
-          Text("Op deze tijd gaat je telefoon op slot met het profiel dat je kiest. Alleen je NOTIS haalt hem eraf.")
-            .font(.satoshi(14))
-            .foregroundStyle(NotisBrand.inkSoft)
-            .padding(.bottom, 4)
-
           if alarms.isEmpty {
             Text("Nog geen avondslot. Tik op + om een tijd te kiezen.")
               .font(.satoshi(15))
@@ -56,7 +51,9 @@ struct NotisBedtimeSheet: View {
             let free = NotisBedtime.allDays & ~NotisBedtime.takenDays(alarms, exceptId: nil)
             editing = EditingAlarm(
               alarm: NotisBedtimeAlarm(
-                minuteOfDay: 21 * 60 + 30, days: free, profileId: profiles.first?.id.uuidString),
+                minuteOfDay: 21 * 60 + 30, days: free, profileId: profiles.first?.id.uuidString,
+                // Free again in the morning unless switched off.
+                endMinuteOfDay: 7 * 60),
               isNew: true)
           } label: {
             Image(systemName: "plus")
@@ -162,14 +159,9 @@ private struct NotisBedtimeEditView: View {
   // Optional: unlock by itself the next morning.
   private var endToggle: some View {
     Toggle(isOn: $hasEnd) {
-      VStack(alignment: .leading, spacing: 2) {
-        Text("Eindtijd")
-          .font(.satoshi(16, .bold))
-          .foregroundStyle(NotisBrand.ink)
-        Text("Vanzelf weer vrij, de volgende ochtend als die vóór de slottijd ligt")
-          .font(.satoshi(13))
-          .foregroundStyle(NotisBrand.inkSoft)
-      }
+      Text("Eindtijd")
+        .font(.satoshi(16, .bold))
+        .foregroundStyle(NotisBrand.ink)
     }
     .tint(NotisBrand.mandarinDark)
     .padding(.top, 4)
@@ -239,7 +231,7 @@ private struct NotisBedtimeEditView: View {
             .foregroundStyle(NotisBrand.ink)
             .padding(.top, 4)
           if profiles.isEmpty {
-            Text("Maak eerst een profiel bij Profielen.")
+            Text("Maak eerst een profiel.")
               .font(.satoshi(14))
               .foregroundStyle(NotisBrand.inkSoft)
           }
