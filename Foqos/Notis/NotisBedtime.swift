@@ -15,6 +15,9 @@ struct NotisBedtimeAlarm: Codable, Equatable, Identifiable {
   /// The profile to lock with; nil = the profile picked on Home.
   var profileId: String?
   var enabled = true
+  /// When the lock ends by itself (minutes after midnight); at or before `minuteOfDay` it is the
+  /// next morning. nil: only a stone unlocks.
+  var endMinuteOfDay: Int?
 
   var hour: Int { minuteOfDay / 60 }
   var minute: Int { minuteOfDay % 60 }
@@ -98,7 +101,7 @@ enum NotisBedtime {
   static func rearm(_ alarms: [NotisBedtimeAlarm] = load(), in context: ModelContext) {
     let center = DeviceActivityCenter()
     let running = center.activities.filter(NotisBedtimeActivity.isBedtime)
-    var desired: [String: (DeviceActivitySchedule, Int, Int, UUID)] = [:]
+    var desired: [String: (DeviceActivitySchedule, Int, Int, Int?, UUID)] = [:]
 
     // Without Screen Time the lock would block nothing: no evening lock until it is allowed.
     let canBlock = AuthorizationCenter.shared.authorizationStatus == .approved || NotisDevice.isSimulator
@@ -114,16 +117,27 @@ enum NotisBedtime {
           // Calendar weekdays: 1 = Sunday … 7 = Saturday; ours start on Monday.
           let weekday = (dayIndex + 1) % 7 + 1
           let start = DateComponents(hour: alarm.hour, minute: alarm.minute, weekday: weekday)
-          // iOS needs an interval of at least 15 minutes; its end does nothing.
-          let endMinute = alarm.minuteOfDay + 16
-          let end =
-            endMinute < 24 * 60
-            ? DateComponents(hour: endMinute / 60, minute: endMinute % 60, weekday: weekday)
-            : DateComponents(
-              hour: (endMinute - 24 * 60) / 60, minute: endMinute % 60, weekday: weekday % 7 + 1)
+          // The end unlocks at the end time (the next morning when it is at or before the lock
+          // time). Without one, 16 minutes later (iOS wants at least 15), and it does nothing.
+          let end: DateComponents
+          if let endMinute = alarm.endMinuteOfDay {
+            end = DateComponents(
+              hour: endMinute / 60, minute: endMinute % 60,
+              weekday: endMinute > alarm.minuteOfDay ? weekday : weekday % 7 + 1)
+          } else {
+            let endMinute = alarm.minuteOfDay + 16
+            end =
+              endMinute < 24 * 60
+              ? DateComponents(hour: endMinute / 60, minute: endMinute % 60, weekday: weekday)
+              : DateComponents(
+                hour: (endMinute - 24 * 60) / 60, minute: endMinute % 60, weekday: weekday % 7 + 1)
+          }
           let schedule = DeviceActivitySchedule(intervalStart: start, intervalEnd: end, repeats: true)
-          desired[identity(weekday: weekday, minuteOfDay: alarm.minuteOfDay, profileId: profile.id.uuidString)] =
-            (schedule, weekday, alarm.minuteOfDay, profile.id)
+          desired[
+            identity(
+              weekday: weekday, minuteOfDay: alarm.minuteOfDay, endMinuteOfDay: alarm.endMinuteOfDay,
+              profileId: profile.id.uuidString)] =
+            (schedule, weekday, alarm.minuteOfDay, alarm.endMinuteOfDay, profile.id)
         }
       }
     }
@@ -132,9 +146,10 @@ enum NotisBedtime {
       running.map { (identity(of: $0), $0) }, uniquingKeysWith: { first, _ in first })
     center.stopMonitoring(running.filter { desired[identity(of: $0)] == nil })
     for (key, value) in desired where runningByIdentity[key] == nil {
-      let (schedule, weekday, minuteOfDay, profileId) = value
+      let (schedule, weekday, minuteOfDay, endMinuteOfDay, profileId) = value
       let name = NotisBedtimeActivity.activityName(
-        weekday: weekday, minuteOfDay: minuteOfDay, armedAt: Date(), profileId: profileId)
+        weekday: weekday, minuteOfDay: minuteOfDay, armedAt: Date(), endMinuteOfDay: endMinuteOfDay,
+        profileId: profileId)
       do {
         try center.startMonitoring(name, during: schedule)
       } catch {
@@ -144,14 +159,20 @@ enum NotisBedtime {
   }
 
   /// An activity without the time it was set up: what makes two of them the same lock.
-  private static func identity(weekday: Int, minuteOfDay: Int, profileId: String) -> String {
-    "\(weekday):\(minuteOfDay):\(profileId)"
+  private static func identity(weekday: Int, minuteOfDay: Int, endMinuteOfDay: Int?, profileId: String)
+    -> String
+  {
+    "\(weekday):\(minuteOfDay):\(endMinuteOfDay ?? -1):\(profileId)"
   }
 
   private static func identity(of activity: DeviceActivityName) -> String {
-    let parts = activity.rawValue.split(separator: ":")
-    guard parts.count == 5 else { return activity.rawValue }
-    return identity(weekday: Int(parts[1]) ?? 0, minuteOfDay: Int(parts[2]) ?? 0, profileId: String(parts[4]))
+    // Names from before the end time had no end field: they differ, so they are set up again.
+    guard activity.rawValue.split(separator: ":").count == 6,
+      let parts = NotisBedtimeActivity.parts(of: activity)
+    else { return activity.rawValue }
+    return identity(
+      weekday: parts.weekday, minuteOfDay: parts.minuteOfDay, endMinuteOfDay: parts.endMinuteOfDay,
+      profileId: parts.profileId)
   }
 
   /// "Elke dag", "Doordeweeks", "Weekend" or "ma, wo, vr", as on Android.
