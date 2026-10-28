@@ -98,13 +98,15 @@ struct MijnNotisProfilesView: View {
             .disabled(isLocked)
             .padding(.top, 6)
 
-            Text(
-              "Tik op een profiel om de apps te wijzigen. Op Home kies je met welk profiel je NOTIS op slot gaat. Elke NOTIS-steen zet op slot en weer vrij, koppelen hoeft niet."
-            )
-            .font(.satoshi(13))
-            .foregroundStyle(NotisBrand.inkSoft)
-            .padding(.horizontal, 4)
-            .padding(.vertical, 4)
+            if !FeatureFlags.lessText {
+              Text(
+                "Tik op een profiel om de apps te wijzigen. Op Home kies je met welk profiel je NOTIS op slot gaat. Elke NOTIS-steen zet op slot en weer vrij, koppelen hoeft niet."
+              )
+              .font(.satoshi(13))
+              .foregroundStyle(NotisBrand.inkSoft)
+              .padding(.horizontal, 4)
+              .padding(.vertical, 4)
+            }
           } else {
             Button {
               profileEdit = ProfileEdit(profile: nil)

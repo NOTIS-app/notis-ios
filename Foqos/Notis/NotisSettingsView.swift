@@ -121,7 +121,8 @@ struct NotisSettingsView: View {
                 SettingsRow(
                   icon: "link",
                   title: String(localized: "Ouder koppelen"),
-                  subtitle: school.guardians.isEmpty ? String(localized: "Laat een ouder zien of NOTIS gelocked is") : nil,
+                  subtitle: school.guardians.isEmpty && !FeatureFlags.lessText
+                    ? String(localized: "Laat een ouder zien of NOTIS gelocked is") : nil,
                   action: { showParentLink = true }
                 )
               }
@@ -463,14 +464,14 @@ struct NotisSettingsView: View {
           SettingsRow(
             icon: "figure.and.child.holdinghands",
             title: String(localized: "Ik ben ouder"),
-            subtitle: String(localized: "Zie of NOTIS van je kind gelocked is"),
+            subtitle: FeatureFlags.lessText ? nil : String(localized: "Zie of NOTIS van je kind gelocked is"),
             action: { loginRole = .parent }
           )
         }
         SettingsRow(
           icon: "person.crop.square",
           title: String(localized: "Ik ben docent"),
-          subtitle: String(localized: "Log in om je lokaal te zien"),
+          subtitle: FeatureFlags.lessText ? nil : String(localized: "Log in om je lokaal te zien"),
           action: { loginRole = .teacher }
         )
       }

@@ -97,6 +97,10 @@ enum FeatureFlags {
   /// words VRIJ / OP SLOT, and no explanation lines under it. The scan hint after tapping the
   /// stone stays. Mirrors `FeatureFlags.HOME_LOCK_GLYPH` on Android.
   static let homeLockGlyph = true
+
+  /// Less text: no explanation under the profiles list, and no grey line under "Ouder koppelen",
+  /// "Ik ben ouder" and "Ik ben docent" in Settings. Mirrors `FeatureFlags.LESS_TEXT` on Android.
+  static let lessText = true
 }
 
 enum NotisDevice {

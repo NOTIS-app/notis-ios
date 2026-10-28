@@ -1,66 +1,62 @@
 import SwiftUI
 
-/// The Home status as a padlock instead of the words VRIJ / OP SLOT: closed when locked, open
-/// when free. Between the two the shackle springs up and swings open (or drops shut). Same as
-/// `LockGlyph` on Android.
+/// The Home status as a padlock instead of the words VRIJ / OP SLOT: shut when locked, open when
+/// free. Opening, the shackle springs straight up and its right leg comes out of the body, like
+/// a real padlock; shutting, it drops back in. Everything stays inside the glyph's own frame.
+/// Same as `LockGlyph` on Android.
 struct NotisLockGlyph: View {
   let isLocked: Bool
   let color: Color
-  var size: CGFloat = 72
+  var size: CGFloat = 64
 
   var body: some View {
     let w = size
-    let h = size
-    let stroke = w * 0.1
-    let bodyTop = h * 0.46
-    let shackleWidth = w * 0.46
-    let shackleTop = h * 0.1
-    let legBottom = bodyTop + stroke
-    let open: CGFloat = isLocked ? 0 : 1
-
+    let h = size * 1.25
     ZStack(alignment: .topLeading) {
-      // Shackle: a U whose legs go into the body. Opening lifts it and swings it round its left leg.
-      Shackle()
-        .stroke(color, style: StrokeStyle(lineWidth: stroke, lineCap: .round))
-        .frame(width: shackleWidth, height: legBottom - shackleTop)
-        .rotationEffect(.degrees(-28 * open), anchor: .bottomLeading)
-        .offset(x: (w - shackleWidth) / 2, y: shackleTop - h * 0.1 * open)
-
-      // Body, with a keyhole cut out.
-      ZStack {
-        RoundedRectangle(cornerRadius: w * 0.12)
-          .fill(color)
-        VStack(spacing: 0) {
-          Circle().frame(width: w * 0.11, height: w * 0.11)
-          Capsule().frame(width: w * 0.06, height: h * 0.1)
-            .offset(y: -w * 0.02)
-        }
-        .offset(y: -h * 0.02)
-        .blendMode(.destinationOut)
-      }
-      .compositingGroup()
-      .frame(width: w * 0.72, height: h * 0.46)
-      .offset(x: w * 0.14, y: bodyTop)
+      Shackle(open: isLocked ? 0 : 1)
+        .stroke(color, style: StrokeStyle(lineWidth: w * 0.13, lineCap: .round))
+      RoundedRectangle(cornerRadius: w * 0.16)
+        .fill(color)
+        .frame(width: w * 0.8, height: h * 0.5)
+        .offset(x: w * 0.1, y: h * 0.5)
     }
     .frame(width: w, height: h, alignment: .topLeading)
-    .animation(.spring(response: 0.5, dampingFraction: 0.55), value: isLocked)
+    .animation(.spring(response: 0.45, dampingFraction: 0.6), value: isLocked)
     .accessibilityElement()
     .accessibilityLabel(isLocked ? String(localized: "OP SLOT") : String(localized: "VRIJ"))
   }
 
+  /// The arch, drawn in the glyph's whole frame. Its left leg stays in the body; open, the arch
+  /// is lifted and the right leg ends above the body.
   private struct Shackle: Shape {
+    var open: CGFloat
+
+    var animatableData: CGFloat {
+      get { open }
+      set { open = newValue }
+    }
+
     func path(in rect: CGRect) -> Path {
-      let r = rect.width / 2
+      let w = rect.width
+      let h = rect.height
+      let stroke = w * 0.13
+      let shackleWidth = w * 0.5
+      let r = shackleWidth / 2
+      let left = (w - shackleWidth) / 2
+      let lift = h * 0.16 * open
+      let archTop = h * 0.2 - lift + stroke / 2
+      let inBody = h * 0.5 + stroke / 2
+
       var path = Path()
-      path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
-      path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + r))
+      path.move(to: CGPoint(x: left, y: inBody))
+      path.addLine(to: CGPoint(x: left, y: archTop + r))
       path.addArc(
-        tangent1End: CGPoint(x: rect.minX, y: rect.minY),
-        tangent2End: CGPoint(x: rect.minX + r, y: rect.minY), radius: r)
+        tangent1End: CGPoint(x: left, y: archTop),
+        tangent2End: CGPoint(x: left + r, y: archTop), radius: r)
       path.addArc(
-        tangent1End: CGPoint(x: rect.maxX, y: rect.minY),
-        tangent2End: CGPoint(x: rect.maxX, y: rect.minY + r), radius: r)
-      path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        tangent1End: CGPoint(x: left + shackleWidth, y: archTop),
+        tangent2End: CGPoint(x: left + shackleWidth, y: archTop + r), radius: r)
+      path.addLine(to: CGPoint(x: left + shackleWidth, y: inBody - lift * 1.15))
       return path
     }
   }
