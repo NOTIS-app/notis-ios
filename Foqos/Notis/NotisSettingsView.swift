@@ -27,6 +27,7 @@ struct NotisSettingsView: View {
   /// "Mijn gegevens wissen" with an account: what was typed, and whether it wasn't the word.
   @State private var deleteWord = ""
   @State private var deleteWordWrong = false
+  @State private var showNothingToDelete = false
   /// The login sheet that is open: "Ik ben docent", "Ik ben ouder" or the hidden admin login.
   @State private var loginRole: NotisTeacher.AccountRole?
   @State private var showParentLink = false
@@ -183,10 +184,12 @@ struct NotisSettingsView: View {
               titleColor: NotisPalette.light.error,
               subtitle: deletesAccount
                 ? String(localized: "Verwijdert ook je account \(teacher.email ?? "")")
-                : String(localized: "Haalt je school, naam, status en ouders weg bij NOTIS"),
+                : nothingStored
+                  ? String(localized: "Niets te wissen: geen school, ouder of account")
+                  : String(localized: "Haalt je school, naam, status en ouders weg bij NOTIS"),
               action: {
                 deleteWord = ""
-                showDeleteData = true
+                if nothingStored { showNothingToDelete = true } else { showDeleteData = true }
               }
             )
           }
@@ -311,6 +314,13 @@ struct NotisSettingsView: View {
         )
       }
     }
+    .alert(String(localized: "Niets te wissen"), isPresented: $showNothingToDelete) {
+      Button("OK", role: .cancel) {}
+    } message: {
+      Text(
+        "NOTIS bewaart niets over deze telefoon: je hoort niet bij een school, er is geen ouder gekoppeld en je bent niet ingelogd. Je profielen en instellingen staan alleen op deze telefoon; die verdwijnen als je NOTIS verwijdert."
+      )
+    }
     .alert(String(localized: "Er is niets gewist"), isPresented: $deleteWordWrong) {
       Button("OK", role: .cancel) {}
     } message: {
@@ -398,6 +408,11 @@ struct NotisSettingsView: View {
   /// The word to type before an account goes. The iOS app is Dutch only, so it asks WISSEN;
   /// DELETE (what Android asks in English) is accepted too.
   private static let deleteWord = "WISSEN"
+
+  /// No school, no parent, no account: NOTIS keeps nothing about this phone to wipe.
+  private var nothingStored: Bool {
+    teacher.role == nil && !school.isLinked
+  }
 
   /// "Mijn gegevens wissen" also deletes a signed-in parent's account.
   private var deletesAccount: Bool {
