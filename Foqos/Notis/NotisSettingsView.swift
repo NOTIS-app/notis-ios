@@ -70,7 +70,7 @@ struct NotisSettingsView: View {
 
           notificationsCard
           // Under Meldingen: the evening lock, like an alarm clock.
-          if FeatureFlags.bedtimeLock {
+          if FeatureFlags.bedtimeLock && !FeatureFlags.bedtimeInMyNotis {
             SettingsCard {
               SettingsRow(
                 icon: "moon",

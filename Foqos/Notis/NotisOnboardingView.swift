@@ -328,7 +328,7 @@ struct NotisOnboardingView: View {
 
       VStack(alignment: .leading, spacing: 14) {
         if FeatureFlags.anyNotisStone {
-          pairStep(1, "Maak bij Profielen een profiel met de apps die je mag gebruiken")
+          pairStep(1, "Maak bij Mijn NOTIS een profiel met de apps die je mag gebruiken")
           pairStep(2, "Kies bovenaan Home je profiel")
           pairStep(3, "Tik op de steen en houd je iPhone tegen je NOTIS: op slot. Nog een keer: weer vrij")
         } else if FeatureFlags.stoneProfiles {

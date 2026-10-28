@@ -111,6 +111,11 @@ enum FeatureFlags {
   /// total, the streak and a bar per day. A tap outside closes it. Mirrors
   /// `FeatureFlags.HOME_STATS` on Android.
   static let homeStats = true
+
+  /// The evening lock moves from Settings to the profiles tab, which is called "Mijn NOTIS" again:
+  /// an orange "Avondslot" button at the top opens the lock times, the profiles follow below.
+  /// Needs `bedtimeLock`. Mirrors `FeatureFlags.BEDTIME_IN_MY_NOTIS` on Android.
+  static let bedtimeInMyNotis = true
 }
 
 enum NotisDevice {

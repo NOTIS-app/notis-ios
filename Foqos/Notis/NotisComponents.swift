@@ -141,8 +141,9 @@ struct NotisNavBar: View {
 
   var body: some View {
     HStack(spacing: 0) {
-      // `FeatureFlags.anyNotisStone`: no stones to manage, so the tab holds only the profiles.
-      if FeatureFlags.anyNotisStone {
+      // `FeatureFlags.anyNotisStone`: no stones to manage, so the tab holds only the profiles
+      // (and, with `FeatureFlags.bedtimeInMyNotis`, the evening lock: "Mijn NOTIS" again).
+      if FeatureFlags.anyNotisStone && !FeatureFlags.bedtimeInMyNotis {
         item(.stones, label: "Profielen", icon: "square.grid.2x2", selectedIcon: "square.grid.2x2.fill")
       } else {
         item(.stones, label: "Mijn NOTIS", icon: "wave.3.right.circle", selectedIcon: "wave.3.right.circle.fill")
