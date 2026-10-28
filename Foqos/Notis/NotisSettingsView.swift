@@ -20,6 +20,9 @@ struct NotisSettingsView: View {
   @State private var deleteDataFailed = false
   @State private var showDeleteAccount = false
   @State private var showLicenses = false
+  @State private var showBedtime = false
+  /// Re-read when the evening lock sheet closes.
+  @State private var bedtimeAlarms = NotisBedtime.load()
   @State private var deleteAccountFailed = false
   /// "Mijn gegevens wissen" with an account: what was typed, and whether it wasn't the word.
   @State private var deleteWord = ""
@@ -65,6 +68,18 @@ struct NotisSettingsView: View {
             .padding(.top, 16)
 
           notificationsCard
+          // Under Meldingen: the evening lock, like an alarm clock.
+          if FeatureFlags.bedtimeLock {
+            SettingsCard {
+              SettingsRow(
+                icon: "moon",
+                title: String(localized: "Avondslot"),
+                subtitle: bedtimeSummary,
+                subtitleColor: bedtimeAlarms.contains(where: \.enabled) ? NotisBrand.mandarinDark : NotisBrand.inkSoft,
+                action: { showBedtime = true }
+              )
+            }
+          }
 
           // Same layout as Android: SCHOOL & OUDERS (StudentClassCard), then the account.
           if FeatureFlags.rooms {
@@ -187,6 +202,9 @@ struct NotisSettingsView: View {
       NotisTeacherLoginSheet(teacher: teacher, role: role) { loginRole = nil }
         .presentationDetents([.medium, .large])
         .presentationBackground(NotisBrand.paper)
+    }
+    .sheet(isPresented: $showBedtime, onDismiss: { bedtimeAlarms = NotisBedtime.load() }) {
+      NotisBedtimeSheet()
     }
     .sheet(isPresented: $showParentLink) {
       NotisParentLinkSheet(school: school, isLocked: strategyManager.isBlocking) { showParentLink = false }
@@ -328,6 +346,13 @@ struct NotisSettingsView: View {
     .onChange(of: notificationsEnabled) { _, isOn in
       NotisNotifications.apply(isOn, context: context, strategyManager: strategyManager)
     }
+  }
+
+  /// "21:30 Doordeweeks · 23:00 Weekend", or "Uit".
+  private var bedtimeSummary: String {
+    let on = bedtimeAlarms.filter(\.enabled)
+    if on.isEmpty { return String(localized: "Uit") }
+    return on.map { "\($0.timeText) \(NotisBedtime.daysText($0.days))" }.joined(separator: " · ")
   }
 
   /// Android's notifications `ActionCard`, alone on its row because the theme picker is off.

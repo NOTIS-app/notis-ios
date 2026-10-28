@@ -198,6 +198,7 @@ struct NotisRootView: View {
 }
 
 struct NotisTabsView: View {
+  @Environment(\.modelContext) private var context
   @EnvironmentObject private var strategyManager: StrategyManager
 
   @State private var tab: NotisTab = .home
@@ -237,5 +238,7 @@ struct NotisTabsView: View {
     .onChange(of: strategyManager.isBlocking) { _, isBlocking in
       if isBlocking { tab = .home }
     }
+    // The evening lock's activities follow the profiles (one may be gone); unchanged ones stay.
+    .task { NotisBedtime.rearm(in: context) }
   }
 }

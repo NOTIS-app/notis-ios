@@ -113,6 +113,12 @@ Een profiel is een lijst toegestane apps met een naam; elke steen start het prof
 - 🍎 Op Android is de lijst van een gekoppelde ouder het enige profiel van het kind, met de naam van de ouder. Op een iPhone kan een ouder geen app-lijst zetten (een iPhone geeft zijn apps niet door), dus houdt het kind zijn eigen profielen en ziet de ouder alleen de status.
 - Eén rode knop "Mijn gegevens wissen" onderaan. Met een ingelogde ouder verwijdert die ook het ouderaccount, na het typen van WISSEN. Docenten en NOTIS-beheerders zien de knop niet; een beheerder verwijdert hen. De aparte knop "Account verwijderen" staat achter `separateAccountDelete` (uit).
 
+## Avondslot (schakelaar `bedtimeLock`, Android `BEDTIME_LOCK`)
+
+- Instellingen → Avondslot (onder Meldingen): een lijst tijden als Apple's wekkers (grote tijd, dagen en profiel, schakelaar), "+" voor een nieuwe. Per dag één tijd; dagen van een andere tijd zijn grijs. Op die tijd gaat de telefoon op slot met het profiel; alleen een steen haalt hem eraf.
+- 🍎 iOS: de tijdkiezer is Apple's eigen draaiwiel (Android heeft er een nagebouwd). Het slot start via de Schermtijd-monitor (`NotisBedtimeActivity`, één apparaatactiviteit per weekdag, ook met de app dicht); Android gebruikt een exacte systeemwekker. Beide draaien alleen op de telefoon.
+- Een tijd die je instelt nadat hij vandaag al voorbij is, slaat vandaag over. Het einde van de activiteit (16 minuten later, iOS wil minstens 15) doet niets.
+
 ## Kan niet anders op iOS
 
 - Scannen kan alleen nadat je in de app op de steen tikt (Android scant altijd op de achtergrond).

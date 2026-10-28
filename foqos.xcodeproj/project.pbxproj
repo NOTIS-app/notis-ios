@@ -227,6 +227,7 @@
 				Models/Strategies/Data/SoftUnblockStrategyData.swift,
 				Models/Strategies/SoftUnblockSessionLifecycleHandler.swift,
 				Models/Timers/BreakTimerActivity.swift,
+				Models/Timers/NotisBedtimeActivity.swift,
 				Models/Timers/PauseTimerActivity.swift,
 				Models/Timers/ScheduleTimerActivity.swift,
 				Models/Timers/SoftUnblockGrantTimerActivity.swift,

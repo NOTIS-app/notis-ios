@@ -72,6 +72,12 @@ enum FeatureFlags {
   /// before keep working. A school stone never locks with an own profile. Off: only paired
   /// stones work. Needs `homeProfilePicker`. Mirrors `FeatureFlags.ANY_NOTIS_STONE` on Android.
   static let anyNotisStone = true
+
+  /// Avondslot: like an alarm clock, a lock time per day (one per day, chosen days, a profile)
+  /// under Settings → Meldingen. At that time the phone locks; only a stone unlocks. Runs on the
+  /// phone: the device activity monitor starts the lock, also with the app closed.
+  /// Mirrors `FeatureFlags.BEDTIME_LOCK` on Android.
+  static let bedtimeLock = true
 }
 
 enum NotisDevice {
