@@ -92,6 +92,11 @@ enum FeatureFlags {
   /// student who taps the room's stone in that time is unlocked and checked out for the rest of
   /// the day (school stones don't lock again until tomorrow). Mirrors `FeatureFlags.ROOM_CHECKOUT`.
   static let roomCheckout = true
+
+  /// Home with less text: a padlock (open or shut, animated between the two) instead of the
+  /// words VRIJ / OP SLOT, and no explanation lines under it. The scan hint after tapping the
+  /// stone stays. Mirrors `FeatureFlags.HOME_LOCK_GLYPH` on Android.
+  static let homeLockGlyph = true
 }
 
 enum NotisDevice {
