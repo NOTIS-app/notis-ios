@@ -147,6 +147,17 @@ struct NotisSettingsView: View {
             )
           }
 
+          // The NOTIS website, between the permissions and the privacy policy, as on Android.
+          SettingsCard {
+            SettingsRow(
+              icon: "globe",
+              title: String(localized: "Website"),
+              subtitle: "notisapp.nl",
+              trailingSystemImage: "arrow.up.right.square",
+              action: { openURL(URL(string: "https://notisapp.nl")!) }
+            )
+          }
+
           SettingsCard {
             SettingsRow(
               icon: "hand.raised",
