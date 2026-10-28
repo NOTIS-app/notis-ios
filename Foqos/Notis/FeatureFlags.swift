@@ -79,6 +79,11 @@ enum FeatureFlags {
   /// Mirrors `FeatureFlags.BEDTIME_LOCK` on Android.
   static let bedtimeLock = true
 
+  /// The evening lock's time on a 24-hour ring instead of wheels: one handle for the lock time,
+  /// a second one for the end time when that is on. The handles can't pass each other.
+  /// Mirrors `FeatureFlags.BEDTIME_DIAL` on Android.
+  static let bedtimeDial = true
+
   /// While locked, a bar at the top of Home says with what: the profile, or the school and room.
   /// Replaces "met <naam>" under OP SLOT. Mirrors `FeatureFlags.LOCKED_WITH_BAR` on Android.
   static let lockedWithBar = true

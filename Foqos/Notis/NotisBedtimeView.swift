@@ -135,12 +135,52 @@ private struct NotisBedtimeEditView: View {
   let onSave: (NotisBedtimeAlarm) -> Void
   let onDelete: () -> Void
 
-  @State private var time = Date()
+  @State private var startMinute = 0
   @State private var days = 0
   @State private var profileId: String?
   @State private var hasEnd = false
-  @State private var endTime = Date()
+  @State private var endMinute = 7 * 60
   @State private var isLoaded = false
+
+  /// A minute of the day as a date, for the wheels.
+  private func dateBinding(_ minute: Binding<Int>) -> Binding<Date> {
+    Binding(
+      get: {
+        Calendar.current.date(bySettingHour: minute.wrappedValue / 60, minute: minute.wrappedValue % 60, second: 0, of: Date())
+          ?? Date()
+      },
+      set: {
+        let parts = Calendar.current.dateComponents([.hour, .minute], from: $0)
+        minute.wrappedValue = (parts.hour ?? 0) * 60 + (parts.minute ?? 0)
+      })
+  }
+
+  private static func clock(_ minute: Int) -> String {
+    String(format: "%02d:%02d", minute / 60, minute % 60)
+  }
+
+  // Optional: unlock by itself the next morning.
+  private var endToggle: some View {
+    Toggle(isOn: $hasEnd) {
+      VStack(alignment: .leading, spacing: 2) {
+        Text("Eindtijd")
+          .font(.satoshi(16, .bold))
+          .foregroundStyle(NotisBrand.ink)
+        Text("Vanzelf weer vrij, de volgende ochtend als die vóór de slottijd ligt")
+          .font(.satoshi(13))
+          .foregroundStyle(NotisBrand.inkSoft)
+      }
+    }
+    .tint(NotisBrand.mandarinDark)
+    .padding(.top, 4)
+    .onChange(of: hasEnd) { _, isOn in
+      // The second handle must not land on (or right next to) the first.
+      let gap = NotisTimeDialMath.arc(startMinute, endMinute)
+      if isOn && !(NotisTimeDialMath.minGap...(NotisTimeDialMath.day - NotisTimeDialMath.minGap)).contains(gap) {
+        endMinute = (startMinute + 8 * 60) % NotisTimeDialMath.day
+      }
+    }
+  }
 
   private var canSave: Bool {
     days != 0 && profileId != nil
@@ -150,10 +190,30 @@ private struct NotisBedtimeEditView: View {
     NavigationStack {
       ScrollView {
         VStack(alignment: .leading, spacing: 12) {
-          DatePicker("", selection: $time, displayedComponents: .hourAndMinute)
-            .datePickerStyle(.wheel)
-            .labelsHidden()
-            .frame(maxWidth: .infinity)
+          if FeatureFlags.bedtimeDial {
+            NotisTimeDial(start: $startMinute, end: $endMinute, showsEnd: hasEnd) {
+              Text(Self.clock(startMinute))
+                .font(.satoshi(44, .light))
+                .foregroundStyle(NotisBrand.ink)
+              if hasEnd {
+                let length = NotisTimeDialMath.arc(startMinute, endMinute)
+                Text("tot \(Self.clock(endMinute))")
+                  .font(.satoshi(16, .medium))
+                  .foregroundStyle(NotisBrand.inkSoft)
+                Text(String(format: "%d u %02d op slot", length / 60, length % 60))
+                  .font(.satoshi(13))
+                  .foregroundStyle(NotisBrand.mandarinDark)
+              }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 4)
+            endToggle
+          } else {
+            DatePicker("", selection: dateBinding($startMinute), displayedComponents: .hourAndMinute)
+              .datePickerStyle(.wheel)
+              .labelsHidden()
+              .frame(maxWidth: .infinity)
+          }
 
           Text("Herhaal")
             .font(.satoshi(16, .bold))
@@ -164,21 +224,11 @@ private struct NotisBedtimeEditView: View {
             }
           }
 
-          // Optional: unlock by itself the next morning.
-          Toggle(isOn: $hasEnd) {
-            VStack(alignment: .leading, spacing: 2) {
-              Text("Eindtijd")
-                .font(.satoshi(16, .bold))
-                .foregroundStyle(NotisBrand.ink)
-              Text("Vanzelf weer vrij, de volgende ochtend als die vóór de slottijd ligt")
-                .font(.satoshi(13))
-                .foregroundStyle(NotisBrand.inkSoft)
-            }
+          if !FeatureFlags.bedtimeDial {
+            endToggle
           }
-          .tint(NotisBrand.mandarinDark)
-          .padding(.top, 4)
-          if hasEnd {
-            DatePicker("", selection: $endTime, displayedComponents: .hourAndMinute)
+          if !FeatureFlags.bedtimeDial && hasEnd {
+            DatePicker("", selection: dateBinding($endMinute), displayedComponents: .hourAndMinute)
               .datePickerStyle(.wheel)
               .labelsHidden()
               .frame(maxWidth: .infinity)
@@ -226,14 +276,12 @@ private struct NotisBedtimeEditView: View {
         }
         ToolbarItem(placement: .topBarTrailing) {
           Button("Bewaar") {
-            let parts = Calendar.current.dateComponents([.hour, .minute], from: time)
             var saved = alarm
-            saved.minuteOfDay = (parts.hour ?? 0) * 60 + (parts.minute ?? 0)
+            saved.minuteOfDay = startMinute
             saved.days = days
             saved.profileId = profileId
             saved.enabled = true
-            let endParts = Calendar.current.dateComponents([.hour, .minute], from: endTime)
-            saved.endMinuteOfDay = hasEnd ? (endParts.hour ?? 7) * 60 + (endParts.minute ?? 0) : nil
+            saved.endMinuteOfDay = hasEnd ? endMinute : nil
             onSave(saved)
             dismiss()
           }
@@ -245,12 +293,11 @@ private struct NotisBedtimeEditView: View {
     }
     .onAppear {
       guard !isLoaded else { return }
-      time = Calendar.current.date(bySettingHour: alarm.hour, minute: alarm.minute, second: 0, of: Date()) ?? Date()
+      startMinute = alarm.hour * 60 + alarm.minute
       days = alarm.days
       profileId = alarm.profileId ?? profiles.first?.id.uuidString
       hasEnd = alarm.endMinuteOfDay != nil
-      let end = alarm.endMinuteOfDay ?? 7 * 60
-      endTime = Calendar.current.date(bySettingHour: end / 60, minute: end % 60, second: 0, of: Date()) ?? Date()
+      endMinute = alarm.endMinuteOfDay ?? 7 * 60
       isLoaded = true
     }
   }
