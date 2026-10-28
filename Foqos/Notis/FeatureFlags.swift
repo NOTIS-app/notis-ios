@@ -98,6 +98,10 @@ enum FeatureFlags {
   /// stone stays. Mirrors `FeatureFlags.HOME_LOCK_GLYPH` on Android.
   static let homeLockGlyph = true
 
+  /// With `homeLockGlyph`: show the padlock. Off, Home shows neither the padlock nor the words:
+  /// the stone itself says free or locked. Mirrors `FeatureFlags.HOME_PADLOCK` on Android.
+  static let homePadlock = false
+
   /// Less text: no explanation under the profiles list, and no grey line under "Ouder koppelen",
   /// "Ik ben ouder" and "Ik ben docent" in Settings. Mirrors `FeatureFlags.LESS_TEXT` on Android.
   static let lessText = true
