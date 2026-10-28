@@ -336,7 +336,9 @@ struct NotisHomeView: View {
         }
       } else {
         if FeatureFlags.homeLockGlyph && !isEmergencyActive {
-          NotisLockGlyph(isLocked: isLocked, color: palette.onSurface)
+          if FeatureFlags.homePadlock {
+            NotisLockGlyph(isLocked: isLocked, color: palette.onSurface)
+          }
         } else {
           Text(statusWord)
             .font(.satoshi(44, .bold))
