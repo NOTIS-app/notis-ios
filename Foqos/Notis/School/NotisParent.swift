@@ -10,6 +10,8 @@ struct ChildStatus: Identifiable, Equatable {
   let state: String?
   let stateChangedAt: Date?
   let lastSeen: Date?
+  /// Locked by the school (checked in to a classroom), not by an own stone.
+  var atSchool = false
   var id: String { userId }
 }
 
@@ -49,6 +51,7 @@ final class NotisParent {
     let state: String
     let state_changed_at: Date
     let last_seen: Date
+    let room_id: String?
   }
 
   /// The parent's children, by name; throws when offline.
@@ -62,7 +65,7 @@ final class NotisParent {
     var statuses: [String: DeviceStatusRow] = [:]
     if !active.isEmpty {
       let rows: [DeviceStatusRow] = try await client.from("device_status")
-        .select("user_id, state, state_changed_at, last_seen")
+        .select("user_id, state, state_changed_at, last_seen, room_id")
         .in("user_id", values: active)
         .execute().value
       for row in rows { statuses[row.user_id.lowercased()] = row }
@@ -75,7 +78,9 @@ final class NotisParent {
         unlinkedAt: link.unlinked_at,
         state: status?.state,
         stateChangedAt: status?.state_changed_at,
-        lastSeen: status?.last_seen
+        lastSeen: status?.last_seen,
+        // A school lock reports its classroom; which one stays with the school.
+        atSchool: status?.room_id != nil && status?.state == "locked"
       )
     }
     .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }

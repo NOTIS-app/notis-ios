@@ -79,6 +79,17 @@ struct NotisHomeView: View {
   }
 
   /// "met <steen>", or the room a school lock is checked in to.
+  /// What the bar at the top says while locked: the school and room, or the profile.
+  private var lockedWith: (label: String, name: String, icon: NotisProfileIcon)? {
+    if isSchoolLocked {
+      let name = [school.school?.name, school.roomName(for: school.currentRoomId)]
+        .compactMap { $0 }.joined(separator: " · ")
+      return (String(localized: "Op slot door school"), name.isEmpty ? String(localized: "School") : name, .school)
+    }
+    guard let profile = strategyManager.activeSession?.blockedProfile else { return nil }
+    return (String(localized: "Op slot met profiel"), profile.name, profile.notisIcon)
+  }
+
   private var lockingName: String? {
     if isSchoolLocked { return school.roomName(for: school.currentRoomId) }
     return strategyManager.activeSession?.blockedProfile.name
@@ -142,6 +153,16 @@ struct NotisHomeView: View {
         .containerRelativeFrame(.vertical, alignment: .center)
       }
       .scrollBounceBehavior(.basedOnSize)
+
+      // Locked: what with, in the same place as the profile bar.
+      if FeatureFlags.lockedWithBar && isLocked, let locked = lockedWith {
+        VStack {
+          NotisLockedBar(label: locked.label, name: locked.name, icon: locked.icon, palette: palette)
+            .padding(.horizontal, 32)
+            .padding(.top, 12)
+          Spacer()
+        }
+      }
 
       if FeatureFlags.homeProfilePicker && !isLocked && !notisProfiles.isEmpty {
         VStack {
@@ -320,7 +341,7 @@ struct NotisHomeView: View {
           .foregroundStyle(palette.onSurface)
           .multilineTextAlignment(.center)
 
-        if isInkLocked, let name = lockingName {
+        if !FeatureFlags.lockedWithBar, isInkLocked, let name = lockingName {
           Text("met \(name)")
             .font(.satoshi(18, .medium))
             .foregroundStyle(palette.primary)

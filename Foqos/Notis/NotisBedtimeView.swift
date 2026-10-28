@@ -88,7 +88,7 @@ struct NotisBedtimeSheet: View {
           Text(alarm.timeText)
             .font(.satoshi(46, .light))
             .foregroundStyle(NotisBrand.ink)
-          Text("\(NotisBedtime.daysText(alarm.days)) · \(profileName)")
+          Text("\(NotisBedtime.daysText(alarm.days)) · \(profileName)\(untilText(alarm))")
             .font(.satoshi(14))
             .foregroundStyle(NotisBrand.inkSoft)
         }
@@ -113,6 +113,12 @@ struct NotisBedtimeSheet: View {
   }
 }
 
+/// " · tot 07:00" for an alarm with an end time.
+private func untilText(_ alarm: NotisBedtimeAlarm) -> String {
+  guard let end = alarm.endMinuteOfDay else { return "" }
+  return " · " + String(localized: "tot \(String(format: "%02d:%02d", end / 60, end % 60))")
+}
+
 private struct EditingAlarm: Identifiable {
   let alarm: NotisBedtimeAlarm
   let isNew: Bool
@@ -132,6 +138,8 @@ private struct NotisBedtimeEditView: View {
   @State private var time = Date()
   @State private var days = 0
   @State private var profileId: String?
+  @State private var hasEnd = false
+  @State private var endTime = Date()
   @State private var isLoaded = false
 
   private var canSave: Bool {
@@ -154,6 +162,26 @@ private struct NotisBedtimeEditView: View {
             ForEach(NotisBedtime.dayOrder, id: \.self) { dayIndex in
               dayChip(dayIndex)
             }
+          }
+
+          // Optional: unlock by itself the next morning.
+          Toggle(isOn: $hasEnd) {
+            VStack(alignment: .leading, spacing: 2) {
+              Text("Eindtijd")
+                .font(.satoshi(16, .bold))
+                .foregroundStyle(NotisBrand.ink)
+              Text("Vanzelf weer vrij, de volgende ochtend als die vóór de slottijd ligt")
+                .font(.satoshi(13))
+                .foregroundStyle(NotisBrand.inkSoft)
+            }
+          }
+          .tint(NotisBrand.mandarinDark)
+          .padding(.top, 4)
+          if hasEnd {
+            DatePicker("", selection: $endTime, displayedComponents: .hourAndMinute)
+              .datePickerStyle(.wheel)
+              .labelsHidden()
+              .frame(maxWidth: .infinity)
           }
 
           Text("Profiel")
@@ -204,6 +232,8 @@ private struct NotisBedtimeEditView: View {
             saved.days = days
             saved.profileId = profileId
             saved.enabled = true
+            let endParts = Calendar.current.dateComponents([.hour, .minute], from: endTime)
+            saved.endMinuteOfDay = hasEnd ? (endParts.hour ?? 7) * 60 + (endParts.minute ?? 0) : nil
             onSave(saved)
             dismiss()
           }
@@ -218,6 +248,9 @@ private struct NotisBedtimeEditView: View {
       time = Calendar.current.date(bySettingHour: alarm.hour, minute: alarm.minute, second: 0, of: Date()) ?? Date()
       days = alarm.days
       profileId = alarm.profileId ?? profiles.first?.id.uuidString
+      hasEnd = alarm.endMinuteOfDay != nil
+      let end = alarm.endMinuteOfDay ?? 7 * 60
+      endTime = Calendar.current.date(bySettingHour: end / 60, minute: end % 60, second: 0, of: Date()) ?? Date()
       isLoaded = true
     }
   }

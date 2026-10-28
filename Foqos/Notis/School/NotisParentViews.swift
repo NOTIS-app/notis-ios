@@ -331,7 +331,11 @@ struct ChildStatusVisual {
     case "locked":
       icon = "lock"
       tint = NotisBrand.mandarinDark
-      subtitle = String(localized: "Gelocked sinds \(since)")
+      // Locked at school: the parent sees that, not which classroom.
+      subtitle =
+        child.atSchool
+        ? String(localized: "Op slot op school sinds \(since)")
+        : String(localized: "Gelocked sinds \(since)")
     case "emergency":
       icon = "exclamationmark.triangle"
       tint = Color(hex: 0xE0A030)
