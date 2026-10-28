@@ -36,7 +36,7 @@ struct RoomStudent: Identifiable, Equatable, Decodable {
 /// who is locked there, "Keuze openen" and the recovery code. Mirrors `RoomRepository.kt`
 /// and `AccountRepository.kt` on Android: the email + password account on this phone is a
 /// teacher, a parent ("Ik ben ouder", `NotisParent`) or a NOTIS admin, who signs in through a
-/// hidden entry (seven taps on "Over NOTIS") and only prepares and links stones (`NotisAdmin`).
+/// hidden entry (seven taps on "Versie") and only prepares and links stones (`NotisAdmin`).
 /// The kinds are separate: an account only signs in where its kind belongs.
 @MainActor
 final class NotisTeacher: ObservableObject {

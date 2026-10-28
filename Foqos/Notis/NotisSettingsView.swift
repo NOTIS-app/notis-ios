@@ -39,7 +39,7 @@ struct NotisSettingsView: View {
   @State private var showRecoveryCode = false
   @State private var showStonePrepare = false
   @State private var showStoneLink = false
-  /// Hidden NOTIS admin login: seven quick taps on "Over NOTIS", as on Android.
+  /// Hidden NOTIS admin login: seven quick taps on "Versie", as on Android.
   @State private var aboutTaps = 0
   @State private var lastAboutTap = Date.distantPast
 
@@ -173,11 +173,11 @@ struct NotisSettingsView: View {
             )
           }
 
-          // "Over NOTIS" stands on its own, without a card, as on Android. Seven quick taps open
+          // "Versie" stands on its own, without a card, as on Android. Seven quick taps open
           // the NOTIS admin login; nothing on screen gives it away.
           SettingsRow(
             icon: "info.circle",
-            title: String(localized: "Over NOTIS"),
+            title: String(localized: "Versie"),
             subtitle: appVersion,
             showsChevron: false
           )

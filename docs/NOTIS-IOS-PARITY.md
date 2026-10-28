@@ -60,11 +60,11 @@ Afwijken mag alleen waar iOS geen keus laat. ✅ = aangepast in iOS, 🍎 = kan 
 |---|---|---|---|
 | 29 | Kop "Instellingen" (28pt) | navigatietitel | ✅ |
 | 30 | Kaart "Meldingen" met schakelaar (melding tijdens sessie) | ontbrak | ✅ schakelaar = melding op het toegangsscherm (Live Activity) |
-| 31 | SYSTEEM: "Toestemmingen" ("Alles aan" / "… ontbreekt"), "Privacybeleid", "Over NOTIS v…" | eigen secties | ✅ |
+| 31 | SYSTEEM: "Toestemmingen" ("Alles aan" / "… ontbreekt"), "Privacybeleid", "Versie v…" | eigen secties | ✅ |
 | 32 | Geen sectie noodontgrendeling (zit in sessie-instellingen, verborgen) | wel een sectie | ✅ weg |
 | 33 | SCHOOL & OUDERS: school, gekoppelde ouders (ontkoppelen), "Ouder koppelen" (code) | placeholders | ✅ (`parentControls`). Klassen blijven uit (`schoolLive`): lokalen vervangen ze |
 | 33a | "Ik ben docent" / "Ik ben ouder"; ouder: inloggen of account aanmaken, kind toevoegen met code, live status, kind verwijderen, apps van het kind kiezen | alleen docent | ✅ 🍎 een iPhone kan geen app-lijst doorgeven: de ouder ziet bij een iPhone-kind alleen de status, en de tekst op de iPhone zegt dat |
-| 33b | Verborgen beheerderslogin (7× op "Over NOTIS"), "Stenen voorbereiden" (zegel schrijven, omzetten persoonlijk ↔ school, vergrendelen optioneel), "Stenen koppelen" | – | ✅ 🍎 iOS opent per scan een NFC-venster, dus stenen gaan één voor één met een knop in plaats van in een doorlopende reeks |
+| 33b | Verborgen beheerderslogin (7× op "Versie"), "Stenen voorbereiden" (zegel schrijven, omzetten persoonlijk ↔ school, vergrendelen optioneel), "Stenen koppelen" | – | ✅ 🍎 iOS opent per scan een NFC-venster, dus stenen gaan één voor één met een knop in plaats van in een doorlopende reeks |
 
 ## Onboarding
 
