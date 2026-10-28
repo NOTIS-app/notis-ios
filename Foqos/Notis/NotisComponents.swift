@@ -200,6 +200,7 @@ struct NotisRootView: View {
 struct NotisTabsView: View {
   @Environment(\.modelContext) private var context
   @EnvironmentObject private var strategyManager: StrategyManager
+  @EnvironmentObject private var requestAuthorizer: RequestAuthorizer
 
   @State private var tab: NotisTab = .home
   @AppStorage(NotisEmergencyUnlock.endsAtKey) private var emergencyEndsAt: Double = 0
@@ -240,5 +241,7 @@ struct NotisTabsView: View {
     }
     // The evening lock's activities follow the profiles (one may be gone); unchanged ones stay.
     .task { NotisBedtime.rearm(in: context) }
+    // Screen Time switched on or off: the evening lock follows (none without it).
+    .onChange(of: requestAuthorizer.isAuthorized) { _, _ in NotisBedtime.rearm(in: context) }
   }
 }

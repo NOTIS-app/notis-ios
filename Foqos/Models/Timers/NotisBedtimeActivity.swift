@@ -1,4 +1,5 @@
 import DeviceActivity
+import FamilyControls
 import Foundation
 import OSLog
 
@@ -44,6 +45,12 @@ class NotisBedtimeActivity: TimerActivity {
       .addingTimeInterval(TimeInterval(minuteOfDay * 60))
     if Date(timeIntervalSince1970: armedAt) > todaysLock {
       log.info("Evening lock set up after today's time, skipped")
+      return
+    }
+
+    // Without Screen Time the lock would block nothing.
+    guard AuthorizationCenter.shared.authorizationStatus == .approved else {
+      log.info("Evening lock: Screen Time not allowed, skipped")
       return
     }
 

@@ -1,4 +1,5 @@
 import DeviceActivity
+import FamilyControls
 import Foundation
 import SwiftData
 
@@ -99,7 +100,9 @@ enum NotisBedtime {
     let running = center.activities.filter(NotisBedtimeActivity.isBedtime)
     var desired: [String: (DeviceActivitySchedule, Int, Int, UUID)] = [:]
 
-    if FeatureFlags.bedtimeLock {
+    // Without Screen Time the lock would block nothing: no evening lock until it is allowed.
+    let canBlock = AuthorizationCenter.shared.authorizationStatus == .approved || NotisDevice.isSimulator
+    if FeatureFlags.bedtimeLock && canBlock {
       let profiles = BlockedProfiles.fetchNotisProfiles(in: context)
       let picked = BlockedProfiles.selectedNotisProfile(in: context)
       for alarm in alarms where alarm.enabled {
