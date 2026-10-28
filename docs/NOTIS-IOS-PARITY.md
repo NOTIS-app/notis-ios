@@ -115,7 +115,7 @@ Een profiel is een lijst toegestane apps met een naam; elke steen start het prof
 
 ## Avondslot (schakelaar `bedtimeLock`, Android `BEDTIME_LOCK`)
 
-- Instellingen → Avondslot (onder Meldingen): een lijst tijden als Apple's wekkers (grote tijd, dagen en profiel, schakelaar), "+" voor een nieuwe. Per dag één tijd; dagen van een andere tijd zijn grijs. Op die tijd gaat de telefoon op slot met het profiel; alleen een steen haalt hem eraf.
+- Instellingen → Avondslot (onder Meldingen): een lijst tijden als Apple's wekkers (grote tijd, dagen en profiel, schakelaar), "+" voor een nieuwe, zoveel als je wilt. Per dag staat er één tijd aan: een tijd aanzetten of bewaren zet andere tijden op dezelfde dag uit (die blijven bewaard); een stip onder een dag toont dat er al een tijd aan staat. Op die tijd gaat de telefoon op slot met het profiel; alleen een steen haalt hem eraf.
 - 🍎 iOS: de tijdkiezer is Apple's eigen draaiwiel (Android heeft er een nagebouwd). Het slot start via de Schermtijd-monitor (`NotisBedtimeActivity`, één apparaatactiviteit per weekdag, ook met de app dicht); Android gebruikt een exacte systeemwekker. Beide draaien alleen op de telefoon.
 - Een tijd die je instelt nadat hij vandaag al voorbij is, slaat vandaag over. Het einde van de activiteit (16 minuten later, iOS wil minstens 15) doet niets.
 

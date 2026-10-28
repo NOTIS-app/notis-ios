@@ -4,7 +4,7 @@ import SwiftData
 
 /// One evening lock time, like an alarm (`FeatureFlags.bedtimeLock`), as Android's
 /// `BedtimeAlarm`. At `minuteOfDay` on each of its `days` the phone locks with `profileId`;
-/// only a stone unlocks. A day belongs to at most one alarm.
+/// only a stone unlocks. There can be any number of alarms, but a day has at most one that is on.
 struct NotisBedtimeAlarm: Codable, Equatable, Identifiable {
   var id = UUID().uuidString
   /// Minutes after midnight, 0..1439.
@@ -27,9 +27,6 @@ enum NotisBedtime {
   static let weekdays = 0b0011111
   static let weekend = 0b1100000
 
-  /// At most this many evening lock times, as on Android.
-  static let maxAlarms = 5
-
   private static let key = "notis.bedtimeAlarms"
 
   /// Monday first, as the day chips show them.
@@ -47,24 +44,33 @@ enum NotisBedtime {
   }
 
   /// Days already used by the other alarms: those can't be picked for `exceptId`.
+  /// Days that another switched-on alarm than `exceptId` already locks on.
   static func takenDays(_ alarms: [NotisBedtimeAlarm], exceptId: String?) -> Int {
-    alarms.filter { $0.id != exceptId }.reduce(0) { $0 | $1.days }
+    alarms.filter { $0.id != exceptId && $0.enabled }.reduce(0) { $0 | $1.days }
   }
 
-  /// Saves `alarm` (new or edited); its days are taken from every other alarm.
+  /// `alarms` with `alarm` saved (new or edited). When it is on, the other switched-on alarms
+  /// that share a day with it are switched off: one lock time per day. They are kept.
+  static func saved(_ alarms: [NotisBedtimeAlarm], _ alarm: NotisBedtimeAlarm) -> [NotisBedtimeAlarm] {
+    let others = alarms.filter { $0.id != alarm.id }.map { other in
+      var other = other
+      if alarm.enabled && other.enabled && other.days & alarm.days != 0 { other.enabled = false }
+      return other
+    }
+    return (others + [alarm]).sorted { $0.minuteOfDay < $1.minuteOfDay }
+  }
+
+  /// Saves `alarm` (new or edited); other switched-on alarms on its days go off.
   static func save(_ alarm: NotisBedtimeAlarm, in context: ModelContext) -> [NotisBedtimeAlarm] {
-    var others = load().filter { $0.id != alarm.id }
-    for index in others.indices { others[index].days &= ~alarm.days }
-    let alarms = (others.filter { $0.days != 0 } + [alarm]).sorted { $0.minuteOfDay < $1.minuteOfDay }
-    return write(alarms, in: context)
+    write(saved(load(), alarm), in: context)
   }
 
+  /// Switches alarm `id` on or off; switching on turns clashing ones off.
   static func setEnabled(_ id: String, _ enabled: Bool, in context: ModelContext) -> [NotisBedtimeAlarm] {
-    write(load().map { alarm in
-      var alarm = alarm
-      if alarm.id == id { alarm.enabled = enabled }
-      return alarm
-    }, in: context)
+    let alarms = load()
+    guard var alarm = alarms.first(where: { $0.id == id }) else { return alarms }
+    alarm.enabled = enabled
+    return write(saved(alarms, alarm), in: context)
   }
 
   static func delete(_ id: String, in context: ModelContext) -> [NotisBedtimeAlarm] {

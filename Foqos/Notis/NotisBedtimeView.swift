@@ -19,14 +19,6 @@ struct NotisBedtimeSheet: View {
     allProfiles.filter(\.isNotisProfile)
   }
 
-  private var atMax: Bool {
-    alarms.count >= NotisBedtime.maxAlarms
-  }
-
-  /// No new time: the maximum is reached, or every day already has one.
-  private var allTaken: Bool {
-    atMax || NotisBedtime.takenDays(alarms, exceptId: nil) == NotisBedtime.allDays
-  }
 
   var body: some View {
     NavigationStack {
@@ -36,12 +28,6 @@ struct NotisBedtimeSheet: View {
             .font(.satoshi(14))
             .foregroundStyle(NotisBrand.inkSoft)
             .padding(.bottom, 4)
-
-          if atMax {
-            Text("Maximaal \(NotisBedtime.maxAlarms) tijden.")
-              .font(.satoshi(13))
-              .foregroundStyle(NotisBrand.inkSoft)
-          }
 
           if alarms.isEmpty {
             Text("Nog geen avondslot. Tik op + om een tijd te kiezen.")
@@ -75,7 +61,6 @@ struct NotisBedtimeSheet: View {
           } label: {
             Image(systemName: "plus")
           }
-          .disabled(allTaken)
           .accessibilityLabel("Tijd toevoegen")
         }
       }
@@ -173,7 +158,7 @@ private struct NotisBedtimeEditView: View {
             }
           }
           if takenDays != 0 {
-            Text("Grijze dagen hebben al een andere tijd.")
+            Text("Een stip: op die dag staat al een andere tijd aan. Bewaar je deze, dan gaat die andere uit.")
               .font(.satoshi(13))
               .foregroundStyle(NotisBrand.inkSoft)
           }
@@ -238,7 +223,7 @@ private struct NotisBedtimeEditView: View {
     .onAppear {
       guard !isLoaded else { return }
       time = Calendar.current.date(bySettingHour: alarm.hour, minute: alarm.minute, second: 0, of: Date()) ?? Date()
-      days = alarm.days & ~takenDays
+      days = alarm.days
       profileId = alarm.profileId ?? profiles.first?.id.uuidString
       isLoaded = true
     }
@@ -248,22 +233,25 @@ private struct NotisBedtimeEditView: View {
     let bit = 1 << dayIndex
     let isTaken = takenDays & bit != 0
     let isOn = days & bit != 0
+    // Another time is on that day: a dot; saving this one switches that one off.
     return Button {
       days ^= bit
     } label: {
       Text(NotisBedtime.dayShort(dayIndex))
         .font(.satoshi(13, .bold))
-        .foregroundStyle(isOn ? .white : isTaken ? NotisBrand.inkSoft.opacity(0.35) : NotisBrand.mandarinDark)
+        .foregroundStyle(isOn ? .white : NotisBrand.mandarinDark)
         .frame(maxWidth: .infinity)
         .aspectRatio(1, contentMode: .fit)
-        .background(
-          Circle().fill(
-            isOn
-              ? NotisBrand.mandarinDark
-              : isTaken ? NotisBrand.ink.opacity(0.04) : NotisBrand.mandarinDark.opacity(0.1))
-        )
+        .background(Circle().fill(isOn ? NotisBrand.mandarinDark : NotisBrand.mandarinDark.opacity(0.1)))
+        .overlay(alignment: .bottom) {
+          if isTaken {
+            Circle()
+              .fill(isOn ? .white : NotisBrand.mandarinDark)
+              .frame(width: 4, height: 4)
+              .padding(.bottom, 5)
+          }
+        }
     }
     .buttonStyle(.plain)
-    .disabled(isTaken)
   }
 }
