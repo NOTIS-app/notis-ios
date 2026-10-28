@@ -70,7 +70,6 @@ struct NotisBedtimeSheet: View {
       NotisBedtimeEditView(
         alarm: editing.alarm,
         isNew: editing.isNew,
-        takenDays: NotisBedtime.takenDays(alarms, exceptId: editing.alarm.id),
         profiles: profiles,
         onSave: { alarms = NotisBedtime.save($0, in: context) },
         onDelete: { alarms = NotisBedtime.delete(editing.alarm.id, in: context) }
@@ -126,7 +125,6 @@ private struct NotisBedtimeEditView: View {
 
   let alarm: NotisBedtimeAlarm
   let isNew: Bool
-  let takenDays: Int
   let profiles: [BlockedProfiles]
   let onSave: (NotisBedtimeAlarm) -> Void
   let onDelete: () -> Void
@@ -156,11 +154,6 @@ private struct NotisBedtimeEditView: View {
             ForEach(NotisBedtime.dayOrder, id: \.self) { dayIndex in
               dayChip(dayIndex)
             }
-          }
-          if takenDays != 0 {
-            Text("Een stip: op die dag staat al een andere tijd aan. Bewaar je deze, dan gaat die andere uit.")
-              .font(.satoshi(13))
-              .foregroundStyle(NotisBrand.inkSoft)
           }
 
           Text("Profiel")
@@ -231,9 +224,7 @@ private struct NotisBedtimeEditView: View {
 
   private func dayChip(_ dayIndex: Int) -> some View {
     let bit = 1 << dayIndex
-    let isTaken = takenDays & bit != 0
     let isOn = days & bit != 0
-    // Another time is on that day: a dot; saving this one switches that one off.
     return Button {
       days ^= bit
     } label: {
@@ -243,14 +234,6 @@ private struct NotisBedtimeEditView: View {
         .frame(maxWidth: .infinity)
         .aspectRatio(1, contentMode: .fit)
         .background(Circle().fill(isOn ? NotisBrand.mandarinDark : NotisBrand.mandarinDark.opacity(0.1)))
-        .overlay(alignment: .bottom) {
-          if isTaken {
-            Circle()
-              .fill(isOn ? .white : NotisBrand.mandarinDark)
-              .frame(width: 4, height: 4)
-              .padding(.bottom, 5)
-          }
-        }
     }
     .buttonStyle(.plain)
   }

@@ -52,12 +52,18 @@ enum NotisBedtime {
   /// `alarms` with `alarm` saved (new or edited). When it is on, the other switched-on alarms
   /// that share a day with it are switched off: one lock time per day. They are kept.
   static func saved(_ alarms: [NotisBedtimeAlarm], _ alarm: NotisBedtimeAlarm) -> [NotisBedtimeAlarm] {
-    let others = alarms.filter { $0.id != alarm.id }.map { other in
+    // An edited alarm stays where it was, so two at the same time never swap places.
+    var updated = alarms.map { other -> NotisBedtimeAlarm in
+      if other.id == alarm.id { return alarm }
       var other = other
       if alarm.enabled && other.enabled && other.days & alarm.days != 0 { other.enabled = false }
       return other
     }
-    return (others + [alarm]).sorted { $0.minuteOfDay < $1.minuteOfDay }
+    if !alarms.contains(where: { $0.id == alarm.id }) { updated.append(alarm) }
+    // Stable: alarms at the same time keep their order.
+    return updated.enumerated()
+      .sorted { ($0.element.minuteOfDay, $0.offset) < ($1.element.minuteOfDay, $1.offset) }
+      .map(\.element)
   }
 
   /// Saves `alarm` (new or edited); other switched-on alarms on its days go off.
