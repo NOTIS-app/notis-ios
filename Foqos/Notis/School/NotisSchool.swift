@@ -48,11 +48,20 @@ struct SchoolStone: Codable, Equatable {
 struct LinkedGuardian: Codable, Equatable, Identifiable {
   let guardianUserId: String
   let guardianEmail: String
+  /// What the parent typed when linking ("Mama"); nil for links made before that existed.
+  var guardianName: String? = nil
   var id: String { guardianUserId }
+
+  /// How the child's phone names this parent.
+  var displayName: String {
+    if let name = guardianName, !name.isEmpty { return name }
+    return guardianEmail.isEmpty ? String(localized: "Ouder") : guardianEmail
+  }
 
   enum CodingKeys: String, CodingKey {
     case guardianUserId = "guardian_user_id"
     case guardianEmail = "guardian_email"
+    case guardianName = "guardian_name"
   }
 }
 
@@ -255,11 +264,20 @@ final class NotisSchool: ObservableObject {
   func refreshGuardians() async {
     do {
       let uid = try await SchoolBackend.ensureStudentSignedIn()
-      let rows: [LinkedGuardian] = try await client.from("guardians")
-        .select("guardian_user_id, guardian_email")
-        .eq("child_user_id", value: uid.uuidString)
-        .filter("unlinked_at", operator: "is", value: "null")
-        .execute().value
+      func read(_ columns: String) async throws -> [LinkedGuardian] {
+        try await client.from("guardians")
+          .select(columns)
+          .eq("child_user_id", value: uid.uuidString)
+          .filter("unlinked_at", operator: "is", value: "null")
+          .execute().value
+      }
+      // guardian_name needs migration 20261105000000_guardian_name.sql; without it, no names.
+      let rows: [LinkedGuardian]
+      do {
+        rows = try await read("guardian_user_id, guardian_email, guardian_name")
+      } catch {
+        rows = try await read("guardian_user_id, guardian_email")
+      }
       setGuardians(rows)
     } catch {
       print("NotisSchool refreshGuardians failed: \(error)")

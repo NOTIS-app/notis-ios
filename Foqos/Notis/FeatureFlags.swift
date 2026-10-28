@@ -61,6 +61,23 @@ enum FeatureFlags {
   /// profile of their own. Off: each stone starts the profile chosen for it in "Mijn NOTIS".
   /// Needs `stoneProfiles`. Mirrors `FeatureFlags.HOME_PROFILE_PICKER` on Android.
   static let homeProfilePicker = true
+
+  /// A separate "Account verwijderen" under signing out. Off: "Mijn gegevens wissen" deletes a
+  /// signed-in parent's account as well, after typing the confirm word.
+  /// Mirrors `FeatureFlags.SEPARATE_ACCOUNT_DELETE` on Android.
+  static let separateAccountDelete = false
+
+  /// No pairing: every stone with a valid personal seal (`sealedStones`) locks with the profile
+  /// picked on Home and unlocks again. "Mijn NOTIS" only lists the profiles. Stones paired
+  /// before keep working. A school stone never locks with an own profile. Off: only paired
+  /// stones work. Needs `homeProfilePicker`. Mirrors `FeatureFlags.ANY_NOTIS_STONE` on Android.
+  static let anyNotisStone = true
+
+  /// Avondslot: like an alarm clock, a lock time per day (one per day, chosen days, a profile)
+  /// under Settings → Meldingen. At that time the phone locks; only a stone unlocks. Runs on the
+  /// phone: the device activity monitor starts the lock, also with the app closed.
+  /// Mirrors `FeatureFlags.BEDTIME_LOCK` on Android.
+  static let bedtimeLock = true
 }
 
 enum NotisDevice {

@@ -75,6 +75,8 @@ class TimerActivityUtil {
       return PauseTimerActivity()
     case SoftUnblockGrantTimerActivity.id:
       return SoftUnblockGrantTimerActivity()
+    case NotisBedtimeActivity.id:
+      return NotisBedtimeActivity()
     default:
       return nil
     }

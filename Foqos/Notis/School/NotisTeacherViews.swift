@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Settings, "Ik ben docent" / "Ik ben ouder": email + password, as Android's `LoginDialog`.
 /// Teacher accounts are made by NOTIS; a parent can also create an account here. With role
-/// admin it is the hidden NOTIS admin login (seven taps on "Over NOTIS").
+/// admin it is the hidden NOTIS admin login (seven taps on "Versie").
 struct NotisTeacherLoginSheet: View {
   @ObservedObject var teacher: NotisTeacher
   var role = NotisTeacher.AccountRole.teacher

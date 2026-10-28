@@ -60,11 +60,11 @@ Afwijken mag alleen waar iOS geen keus laat. ✅ = aangepast in iOS, 🍎 = kan 
 |---|---|---|---|
 | 29 | Kop "Instellingen" (28pt) | navigatietitel | ✅ |
 | 30 | Kaart "Meldingen" met schakelaar (melding tijdens sessie) | ontbrak | ✅ schakelaar = melding op het toegangsscherm (Live Activity) |
-| 31 | SYSTEEM: "Toestemmingen" ("Alles aan" / "… ontbreekt"), "Privacybeleid", "Over NOTIS v…" | eigen secties | ✅ |
+| 31 | SYSTEEM: "Toestemmingen" ("Alles aan" / "… ontbreekt"), "Privacybeleid", "Versie v…" | eigen secties | ✅ |
 | 32 | Geen sectie noodontgrendeling (zit in sessie-instellingen, verborgen) | wel een sectie | ✅ weg |
 | 33 | SCHOOL & OUDERS: school, gekoppelde ouders (ontkoppelen), "Ouder koppelen" (code) | placeholders | ✅ (`parentControls`). Klassen blijven uit (`schoolLive`): lokalen vervangen ze |
 | 33a | "Ik ben docent" / "Ik ben ouder"; ouder: inloggen of account aanmaken, kind toevoegen met code, live status, kind verwijderen, apps van het kind kiezen | alleen docent | ✅ 🍎 een iPhone kan geen app-lijst doorgeven: de ouder ziet bij een iPhone-kind alleen de status, en de tekst op de iPhone zegt dat |
-| 33b | Verborgen beheerderslogin (7× op "Over NOTIS"), "Stenen voorbereiden" (zegel schrijven, omzetten persoonlijk ↔ school, vergrendelen optioneel), "Stenen koppelen" | – | ✅ 🍎 iOS opent per scan een NFC-venster, dus stenen gaan één voor één met een knop in plaats van in een doorlopende reeks |
+| 33b | Verborgen beheerderslogin (7× op "Versie"), "Stenen voorbereiden" (zegel schrijven, omzetten persoonlijk ↔ school, vergrendelen optioneel), "Stenen koppelen" | – | ✅ 🍎 iOS opent per scan een NFC-venster, dus stenen gaan één voor één met een knop in plaats van in een doorlopende reeks |
 
 ## Onboarding
 
@@ -98,6 +98,27 @@ Een profiel is een lijst toegestane apps met een naam; elke steen start het prof
 - Stenen hebben geen eigen profiel meer: bij koppelen alleen een naam, op de kaart "Gekoppeld", tik = hernoemen.
 - De keuze staat in UserDefaults (`notis.selectedProfileId`); is dat profiel weg, dan geldt het bovenste.
 - Profielen hebben een icoon (12 vaste iconen, zelfde volgorde als Android), te kiezen in het blad "Nieuw profiel" / "Profiel bewerken". 🍎 Op iOS in UserDefaults (`notis.profileIcons`), omdat het Foqos-model er geen veld voor heeft; Android heeft de kolom `profiles.icon`.
+
+### Geen koppelen (schakelaar `anyNotisStone`, Android `ANY_NOTIS_STONE`)
+
+- Elke steen met een geldig zegel "persoonlijk" (`StoneSeal`) zet op slot met het gekozen profiel en weer vrij, zonder koppelen. Het tabblad heet "Profielen" (was Mijn NOTIS) en toont alleen de profielen; "Nieuw profiel" is de hoofdknop (mandarijn).
+- Een schoolsteen gaat nooit op slot met je eigen profiel ("Dit is een schoolsteen: die zet je niet op slot met je eigen profiel"); een gewone NFC-chip geeft "Dit is geen NOTIS-steen". Eerder gekoppelde stenen blijven werken.
+- Productie blijft gelijk: "Stenen voorbereiden" schrijft het zegel, "Stenen koppelen" koppelt schoolstenen aan een lokaal.
+
+## Instellingen: ouder, docent, gegevens wissen
+
+- Uitgelogd: eerst "Ik ben ouder", dan "Ik ben docent".
+- "Ouder koppelen" toont de koppelcode ook als QR-code (`ParentLinkQR`, tekst `NOTIS-OUDER:<code>`, gelijk aan Android); "Kind toevoegen" heeft "QR-code scannen" (de bestaande QR-scanner van de app). Android en iPhone scannen elkaars code.
+- "Kind toevoegen" vraagt ook de naam van de ouder ("Mama"); het kind ziet die bij Instellingen (`guardian_name`, migratie `20261105000000_guardian_name.sql`; zonder migratie koppelt het zonder naam).
+- 🍎 Op Android is de lijst van een gekoppelde ouder het enige profiel van het kind, met de naam van de ouder. Op een iPhone kan een ouder geen app-lijst zetten (een iPhone geeft zijn apps niet door), dus houdt het kind zijn eigen profielen en ziet de ouder alleen de status.
+- Eén rode knop "Mijn gegevens wissen" onderaan. Met een ingelogde ouder verwijdert die ook het ouderaccount, na het typen van WISSEN. Docenten en NOTIS-beheerders zien de knop niet; een beheerder verwijdert hen. De aparte knop "Account verwijderen" staat achter `separateAccountDelete` (uit).
+
+## Avondslot (schakelaar `bedtimeLock`, Android `BEDTIME_LOCK`)
+
+- Instellingen → Avondslot (onder Meldingen): een lijst tijden als Apple's wekkers (grote tijd, dagen en profiel, schakelaar), "+" voor een nieuwe, zoveel als je wilt. Per dag staat er één tijd aan: een tijd aanzetten of bewaren zet andere tijden op dezelfde dag uit (die blijven bewaard); een stip onder een dag toont dat er al een tijd aan staat. Op die tijd gaat de telefoon op slot met het profiel; alleen een steen haalt hem eraf.
+- 🍎 iOS: de tijdkiezer is Apple's eigen draaiwiel (Android heeft er een nagebouwd). Het slot start via de Schermtijd-monitor (`NotisBedtimeActivity`, één apparaatactiviteit per weekdag, ook met de app dicht); Android gebruikt een exacte systeemwekker. Beide draaien alleen op de telefoon.
+- Zonder Schermtijd-toestemming gaat het avondslot niet af (de app zet de activiteiten dan uit, de monitor controleert het ook); Android doet hetzelfde zonder toegankelijkheid of over-andere-apps.
+- Een tijd die je instelt nadat hij vandaag al voorbij is, slaat vandaag over. Het einde van de activiteit (16 minuten later, iOS wil minstens 15) doet niets.
 
 ## Kan niet anders op iOS
 

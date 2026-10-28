@@ -1,3 +1,4 @@
+import CodeScanner
 import SwiftUI
 
 // MARK: - Child's phone: "Ouder koppelen"
@@ -33,10 +34,20 @@ struct NotisParentLinkSheet: View {
       case .loading:
         ProgressView().tint(NotisBrand.mandarinDark).padding(24)
       case .showing(let code):
-        Text("Je ouder vult deze code in, in de eigen NOTIS-app bij Instellingen → Ik ben ouder → Kind toevoegen.")
+        Text("Je ouder scant deze QR-code, of vult de code in, in de eigen NOTIS-app bij Instellingen → Ik ben ouder → Kind toevoegen.")
           .font(.satoshi(14))
           .foregroundStyle(NotisBrand.inkSoft)
           .multilineTextAlignment(.center)
+        if let qr = ParentLinkQR.image(code.code) {
+          Image(uiImage: qr)
+            .interpolation(.none)
+            .resizable()
+            .scaledToFit()
+            .frame(width: 200, height: 200)
+            .padding(8)
+            .background(.white, in: RoundedRectangle(cornerRadius: 12))
+            .accessibilityLabel("QR-code om een ouder te koppelen")
+        }
         Text(code.code)
           .font(.satoshi(40, .bold))
           .tracking(6)
@@ -109,21 +120,34 @@ struct NotisAddChildSheet: View {
 
   @State private var code = ""
   @State private var name = ""
+  @State private var parentName = ""
   @State private var isBusy = false
   @State private var errorText: String?
+  @State private var isScanning = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text("Kind toevoegen")
         .font(.satoshi(22, .bold))
         .foregroundStyle(NotisBrand.ink)
-      Text("Ga op de telefoon van je kind naar Instellingen → Ouder koppelen. Vul de code in die daar verschijnt.")
+      Text("Ga op de telefoon van je kind naar Instellingen → Ouder koppelen. Scan de QR-code die daar verschijnt, of vul de code in.")
         .font(.satoshi(14))
         .foregroundStyle(NotisBrand.inkSoft)
+      Button {
+        errorText = nil
+        isScanning = true
+      } label: {
+        Label("QR-code scannen", systemImage: "qrcode.viewfinder")
+      }
+      .buttonStyle(NotisOutlinedButtonStyle())
+      .disabled(isBusy)
       NotisTextField(title: "Koppelcode", text: $code, isSecure: false)
         .textInputAutocapitalization(.characters)
         .autocorrectionDisabled()
       NotisTextField(title: "Naam van je kind", text: $name, isSecure: false)
+        .textInputAutocapitalization(.words)
+      // Shown on the child's phone ("Mama").
+      NotisTextField(title: "Jouw naam, zoals je kind je noemt", text: $parentName, isSecure: false)
         .textInputAutocapitalization(.words)
       if let errorText {
         Text(errorText).font(.satoshi(13)).foregroundStyle(.red)
@@ -133,6 +157,7 @@ struct NotisAddChildSheet: View {
         isBusy: isBusy,
         isEnabled: !code.trimmingCharacters(in: .whitespaces).isEmpty
           && !name.trimmingCharacters(in: .whitespaces).isEmpty
+          && !parentName.trimmingCharacters(in: .whitespaces).isEmpty
       ) {
         Task { await link() }
       }
@@ -143,13 +168,27 @@ struct NotisAddChildSheet: View {
         .disabled(isBusy)
     }
     .padding(24)
+    .sheet(isPresented: $isScanning) {
+      LabeledCodeScannerView(
+        heading: String(localized: "QR-code scannen"),
+        subtitle: String(localized: "Richt je camera op de QR-code op de telefoon van je kind.")
+      ) { result in
+        isScanning = false
+        guard case .success(let scan) = result else { return }
+        if let scanned = ParentLinkQR.parse(scan.string) {
+          code = scanned
+        } else {
+          errorText = String(localized: "Dit is geen NOTIS-koppelcode. Scan de QR-code bij Ouder koppelen.")
+        }
+      }
+    }
   }
 
   private func link() async {
     isBusy = true
     errorText = nil
     do {
-      try await NotisParent.shared.linkChild(code: code, name: String(name.prefix(40)))
+      try await NotisParent.shared.linkChild(code: code, name: String(name.prefix(40)), parentName: parentName)
       onDone(true)
     } catch NotisParent.LinkError.codeInvalid {
       errorText = String(localized: "Deze code is onbekend of verlopen. Vraag om een nieuwe code.")

@@ -44,11 +44,20 @@ class NotisStoneBlockingStrategy: BlockingStrategy {
         self.lock(context: context, stone: profile, tag: tag.id)
         return
       }
-      if FeatureFlags.rooms {
-        self.scanUnknownStoneWhileFree(uid: tag.id, context: context)
+      if self.isAnyOwnStone(tag) {
+        guard let profile = BlockedProfiles.selectedNotisProfile(in: context) else {
+          self.nfcScanner.resultErrorMessage = String(localized: "Maak eerst een profiel bij Profielen")
+          return
+        }
+        self.nfcScanner.resultMessage = String(localized: "Apps op slot · met \(profile.name)")
+        self.lock(context: context, stone: profile, tag: tag.id)
         return
       }
-      self.nfcScanner.resultErrorMessage = String(localized: "Deze steen is niet gekoppeld")
+      if FeatureFlags.rooms {
+        self.scanUnknownStoneWhileFree(uid: tag.id, seal: tag.seal, context: context)
+        return
+      }
+      self.nfcScanner.resultErrorMessage = Self.notOwnStoneMessage(seal: tag.seal)
     }
 
     nfcScanner.scan(alertMessage: String(localized: "Houd de bovenkant van je iPhone tegen je NOTIS"))
@@ -98,8 +107,13 @@ class NotisStoneBlockingStrategy: BlockingStrategy {
           localized: "Op slot door school: tik de steen van je lokaal om te ontgrendelen")
         return
       }
+      if self.isAnyOwnStone(tag) {
+        self.nfcScanner.resultMessage = String(localized: "Apps weer vrij")
+        self.unlock(context: context, session: session)
+        return
+      }
       guard let stone = BlockedProfiles.findNotisStone(withTag: tag.id, in: context) else {
-        self.nfcScanner.resultErrorMessage = String(localized: "Deze steen is niet gekoppeld")
+        self.nfcScanner.resultErrorMessage = Self.notOwnStoneMessage(seal: tag.seal)
         return
       }
       let name = stone.notisStoneName(tag: tag.id) ?? stone.name
@@ -117,12 +131,29 @@ class NotisStoneBlockingStrategy: BlockingStrategy {
     unlock(context: context, session: session)
   }
 
+  // MARK: - Every NOTIS stone (`FeatureFlags.anyNotisStone`)
+
+  /// A stone with a personal seal that isn't paired: with `anyNotisStone` it works like an own
+  /// stone. A room's stone never does, whatever is on it.
+  private func isAnyOwnStone(_ tag: NFCResult) -> Bool {
+    guard FeatureFlags.anyNotisStone, tag.seal == .personal else { return false }
+    return MainActor.assumeIsolated { NotisSchool.shared.roomFor(uid: tag.id) == nil }
+  }
+
+  /// Why a stone that isn't paired doesn't lock or unlock.
+  private static func notOwnStoneMessage(seal: StoneKind?) -> String {
+    guard FeatureFlags.anyNotisStone else { return String(localized: "Deze steen is niet gekoppeld") }
+    return seal == .school
+      ? String(localized: "Dit is een schoolsteen: die zet je niet op slot met je eigen profiel")
+      : String(localized: "Dit is geen NOTIS-steen")
+  }
+
   // MARK: - Rooms (stappenplan-lokalen.md)
 
   /// Not locked, and the stone isn't one of the phone's own: a room of the joined school locks
   /// and checks in; any other stone is asked about on the server (a school to join, or a stone
   /// of our school linked after the last refresh).
-  private func scanUnknownStoneWhileFree(uid: String, context: ModelContext) {
+  private func scanUnknownStoneWhileFree(uid: String, seal: StoneKind?, context: ModelContext) {
     MainActor.assumeIsolated {
       let school = NotisSchool.shared
       if let room = school.roomFor(uid: uid) {
@@ -133,7 +164,7 @@ class NotisStoneBlockingStrategy: BlockingStrategy {
       nfcScanner.resultMessage = String(localized: "Steen gelezen")
       Task { @MainActor in
         guard let invite = await school.invite(uid: uid) else {
-          self.onErrorMessage?(String(localized: "Deze steen is niet gekoppeld"))
+          self.onErrorMessage?(Self.notOwnStoneMessage(seal: seal))
           return
         }
         if invite.schoolId == school.school?.schoolId {

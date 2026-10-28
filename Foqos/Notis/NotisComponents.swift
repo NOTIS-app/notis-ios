@@ -138,7 +138,12 @@ struct NotisNavBar: View {
 
   var body: some View {
     HStack(spacing: 0) {
-      item(.stones, label: "Mijn NOTIS", icon: "wave.3.right.circle", selectedIcon: "wave.3.right.circle.fill")
+      // `FeatureFlags.anyNotisStone`: no stones to manage, so the tab holds only the profiles.
+      if FeatureFlags.anyNotisStone {
+        item(.stones, label: "Profielen", icon: "square.grid.2x2", selectedIcon: "square.grid.2x2.fill")
+      } else {
+        item(.stones, label: "Mijn NOTIS", icon: "wave.3.right.circle", selectedIcon: "wave.3.right.circle.fill")
+      }
       item(.home, label: "Home", icon: "house", selectedIcon: "house.fill")
       item(.settings, label: "Instellingen", icon: "gearshape", selectedIcon: "gearshape.fill")
     }
@@ -193,7 +198,9 @@ struct NotisRootView: View {
 }
 
 struct NotisTabsView: View {
+  @Environment(\.modelContext) private var context
   @EnvironmentObject private var strategyManager: StrategyManager
+  @EnvironmentObject private var requestAuthorizer: RequestAuthorizer
 
   @State private var tab: NotisTab = .home
   @AppStorage(NotisEmergencyUnlock.endsAtKey) private var emergencyEndsAt: Double = 0
@@ -232,5 +239,9 @@ struct NotisTabsView: View {
     .onChange(of: strategyManager.isBlocking) { _, isBlocking in
       if isBlocking { tab = .home }
     }
+    // The evening lock's activities follow the profiles (one may be gone); unchanged ones stay.
+    .task { NotisBedtime.rearm(in: context) }
+    // Screen Time switched on or off: the evening lock follows (none without it).
+    .onChange(of: requestAuthorizer.isAuthorized) { _, _ in NotisBedtime.rearm(in: context) }
   }
 }
