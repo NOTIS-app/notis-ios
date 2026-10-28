@@ -12,7 +12,7 @@ struct NotisOnboardingView: View {
   @EnvironmentObject private var requestAuthorizer: RequestAuthorizer
 
   private enum Page: Int, CaseIterable {
-    case welcome, permissions, apps, pairing
+    case welcome, permissions, apps, parents, teachers, pairing
   }
 
   /// Without `onboardingApps` and `onboardingPairLater`, onboarding ends on the permissions page.
@@ -20,6 +20,8 @@ struct NotisOnboardingView: View {
     switch page {
     case .apps: return FeatureFlags.onboardingApps
     case .pairing: return FeatureFlags.onboardingPairing || FeatureFlags.onboardingPairLater
+    case .parents: return FeatureFlags.onboardingRoles && FeatureFlags.parentControls && SchoolBackend.isAvailable
+    case .teachers: return FeatureFlags.onboardingRoles && FeatureFlags.rooms && SchoolBackend.isAvailable
     default: return true
     }
   }
@@ -48,6 +50,8 @@ struct NotisOnboardingView: View {
         case .welcome: welcome
         case .permissions: permissions
         case .apps: apps
+        case .parents: parentsPage
+        case .teachers: teachersPage
         case .pairing:
           if FeatureFlags.onboardingPairing { pairing } else { pairLater }
         }
@@ -307,6 +311,69 @@ struct NotisOnboardingView: View {
         .padding(.bottom, 64)
     }
     .animation(.easeInOut(duration: 0.3), value: isPairingSuccess)
+  }
+
+  // MARK: - Parents and teachers
+
+  /// Android's `ParentsPage` (`FeatureFlags.onboardingRoles`): how a parent and a child link up.
+  private var parentsPage: some View {
+    rolePage(
+      icon: "figure.and.child.holdinghands",
+      title: "Voor ouders en kinderen",
+      steps: [
+        "Kind: tik bij Instellingen op Ouder koppelen. Er verschijnt een code",
+        "Ouder: tik in je eigen NOTIS-app bij Instellingen op Ik ben ouder en voeg je kind toe met die code",
+        "De ouder ziet nu of het kind op slot zit",
+      ]
+    )
+  }
+
+  /// Android's `TeachersPage` (`FeatureFlags.onboardingRoles`): what a teacher does.
+  private var teachersPage: some View {
+    rolePage(
+      icon: "graduationcap",
+      title: "Voor docenten",
+      steps: [
+        "Tik bij Instellingen op Ik ben docent en log in met je docentaccount",
+        "Tik op de NOTIS-steen in je lokaal",
+        "Je ziet live welke leerlingen op slot zitten",
+      ]
+    )
+  }
+
+  /// Same layout as `pairLater`, with an icon in a circle instead of the stone.
+  private func rolePage(icon: String, title: LocalizedStringKey, steps: [LocalizedStringKey]) -> some View {
+    VStack(spacing: 0) {
+      Spacer()
+
+      Image(systemName: icon)
+        .font(.system(size: 46))
+        .foregroundStyle(NotisBrand.mandarinDark)
+        .frame(width: 112, height: 112)
+        .background(NotisBrand.mandarinDark.opacity(0.1), in: Circle())
+
+      Text(title)
+        .font(.satoshi(26, .bold))
+        .foregroundStyle(NotisBrand.ink)
+        .multilineTextAlignment(.center)
+        .padding(.top, 28)
+
+      VStack(alignment: .leading, spacing: 14) {
+        ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
+          pairStep(index + 1, step)
+        }
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(16)
+      .notisCard()
+      .padding(.top, 24)
+
+      Spacer()
+
+      Button("Volgende", action: goNext)
+        .buttonStyle(NotisPrimaryButtonStyle())
+        .padding(.bottom, 72)
+    }
   }
 
   // MARK: - Pair later

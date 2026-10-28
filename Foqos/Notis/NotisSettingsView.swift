@@ -21,6 +21,7 @@ struct NotisSettingsView: View {
   @State private var showDeleteAccount = false
   @State private var showLicenses = false
   @State private var showBedtime = false
+  @State private var showHelp = false
   /// Re-read when the evening lock sheet closes.
   @State private var bedtimeAlarms = NotisBedtime.load()
   @State private var deleteAccountFailed = false
@@ -63,10 +64,16 @@ struct NotisSettingsView: View {
 
       ScrollView {
         VStack(alignment: .leading, spacing: 12) {
-          Text("Instellingen")
-            .font(.satoshi(28, .bold))
-            .foregroundStyle(NotisBrand.ink)
-            .padding(.top, 16)
+          HStack {
+            Text("Instellingen")
+              .font(.satoshi(28, .bold))
+              .foregroundStyle(NotisBrand.ink)
+            Spacer()
+            if FeatureFlags.settingsHelp {
+              NotisHelpButton { showHelp = true }
+            }
+          }
+          .padding(.top, 16)
 
           notificationsCard
           // Under Meldingen: the evening lock, like an alarm clock.
@@ -221,6 +228,12 @@ struct NotisSettingsView: View {
     .sheet(isPresented: $showBedtime, onDismiss: { bedtimeAlarms = NotisBedtime.load() }) {
       NotisBedtimeSheet()
     }
+    // `FeatureFlags.settingsHelp`: what the rows are for. Parents and teachers only with the backend.
+    .sheet(isPresented: $showHelp) {
+      NotisHelpSheet(icon: "gearshape", title: "Wat staat hier?", items: helpItems) { showHelp = false }
+        .presentationDetents([.large])
+        .presentationBackground(NotisBrand.boneLight)
+    }
     .sheet(isPresented: $showParentLink) {
       NotisParentLinkSheet(school: school, isLocked: strategyManager.isBlocking) { showParentLink = false }
         .presentationDetents([.medium])
@@ -368,6 +381,52 @@ struct NotisSettingsView: View {
     .onChange(of: notificationsEnabled) { _, isOn in
       NotisNotifications.apply(isOn, context: context, strategyManager: strategyManager)
     }
+  }
+
+  /// Android's settings help: one item per row, in the order of the screen.
+  private var helpItems: [NotisHelpItem] {
+    var items = [
+      NotisHelpItem(
+        icon: "bell", title: String(localized: "Meldingen"),
+        body: String(localized: "Zet je dit aan, dan zie je tijdens een slot een melding met hoe lang je al op slot zit."))
+    ]
+    if SchoolBackend.isAvailable {
+      if FeatureFlags.parentControls {
+        items.append(
+          NotisHelpItem(
+            icon: "link", title: String(localized: "Ouder koppelen"),
+            body: String(
+              localized:
+                "Voor kinderen: je krijgt een code die je ouder in de eigen NOTIS-app invult. Je ouder ziet dan of je op slot zit."
+            )))
+        items.append(
+          NotisHelpItem(
+            icon: "figure.and.child.holdinghands", title: String(localized: "Ik ben ouder"),
+            body: String(
+              localized:
+                "Voor ouders: log in of maak een account en voeg je kind toe met de code van Ouder koppelen. Je ziet live of je kind op slot zit en kiest bij een Android-telefoon welke apps het mag gebruiken."
+            )))
+      }
+      items.append(
+        NotisHelpItem(
+          icon: "graduationcap", title: String(localized: "Ik ben docent"),
+          body: String(
+            localized:
+              "Voor docenten: log in met het account dat je van NOTIS krijgt. Tik op de steen van je lokaal en je ziet live wie er op slot zit."
+          )))
+    }
+    items.append(
+      NotisHelpItem(
+        icon: "checkmark.shield", title: String(localized: "Toestemmingen"),
+        body: String(
+          localized:
+            "NOTIS heeft Schermtijd nodig om apps te blokkeren. Staat die uit, dan zie je dat hier en zet je hem weer aan."
+        )))
+    items.append(
+      NotisHelpItem(
+        icon: "globe", title: String(localized: "Website"),
+        body: String(localized: "Op notisapp.nl lees je meer over NOTIS en vind je de stenen.")))
+    return items
   }
 
   /// "21:30 Doordeweeks · 23:00 Weekend", or "Uit".
