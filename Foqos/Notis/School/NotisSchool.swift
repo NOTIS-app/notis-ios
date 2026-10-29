@@ -11,6 +11,9 @@ struct JoinedSchool: Codable, Equatable {
   let allowedApps: [SchoolApp]
   let allowedAppsVersion: Int
   let stones: [SchoolStone]
+  /// The server wiped this student's name (migration 20261109000000_short_student_names.sql):
+  /// the next tap of a school stone asks for a new one. Only `my_school()` sends it.
+  var needsName: Bool? = nil
 
   enum CodingKeys: String, CodingKey {
     case schoolId = "school_id"
@@ -19,6 +22,7 @@ struct JoinedSchool: Codable, Equatable {
     case allowedApps = "allowed_apps"
     case allowedAppsVersion = "allowed_apps_version"
     case stones
+    case needsName = "needs_name"
   }
 }
 
@@ -211,6 +215,8 @@ final class NotisSchool: ObservableObject {
     do {
       try await SchoolBackend.ensureStudentSignedIn()
       let fresh: JoinedSchool? = try await client.rpc("my_school").execute().value
+      // A wiped name is not offered again when the join sheet asks for a new one.
+      if fresh?.needsName == true { defaults.removeObject(forKey: Keys.displayName) }
       // A student removed from the school on the server is no longer in it here.
       setSchool(fresh)
     } catch {

@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// First tap on a stone of a school this phone hasn't joined: "Je zit op … Wat is je naam?".
-/// Asked once; after joining, the same tap locks the phone in that stone's room. Mirrors
+/// Also asked again after the server wiped the name. After joining, the same tap locks the phone
+/// in that stone's room. AVG: a short name, first name + first letter is enough. Mirrors
 /// `SchoolJoinDialog` on Android.
 struct NotisSchoolJoinSheet: View {
   let schoolName: String
@@ -24,19 +25,20 @@ struct NotisSchoolJoinSheet: View {
         .font(.satoshi(22, .bold))
         .foregroundStyle(NotisBrand.ink)
       Text(
-        "Wat is je naam? Je docenten zien deze naam, samen met of je telefoon gelocked is. Je vult dit maar één keer in."
+        "Wat is je naam? Je voornaam en de eerste letter van je achternaam is genoeg. Alleen de docent van het lokaal waar je les hebt ziet deze naam, samen met of je telefoon gelocked is."
       )
       .font(.satoshi(15))
       .foregroundStyle(NotisBrand.inkSoft)
 
-      TextField("Je naam", text: $name)
+      TextField("Je naam, bijv. Sanne V.", text: $name)
         .font(.satoshi(17))
         .textInputAutocapitalization(.words)
         .padding(14)
         .background(NotisBrand.card, in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(NotisBrand.ink.opacity(0.12)))
         .onChange(of: name) { _, value in
-          if value.count > 40 { name = String(value.prefix(40)) }
+          // The server keeps at most 20 characters.
+          if value.count > 20 { name = String(value.prefix(20)) }
         }
 
       if let errorText {
