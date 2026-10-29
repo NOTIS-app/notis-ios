@@ -197,26 +197,24 @@ struct NotisHomeView: View {
         }
       }
 
-      // `FeatureFlags.homeHelp`: the bar narrows for a round "i" where the other tabs have it.
+      // `FeatureFlags.homeHelp`: a round "i" where the other tabs have it; the bar stays centred,
+      // as far from both edges as the "i" needs (12 + 40 + 8 pt).
       if FeatureFlags.homeHelp && !isLocked {
-        VStack {
-          HStack(alignment: .top, spacing: 8) {
-            if FeatureFlags.homeProfilePicker && !notisProfiles.isEmpty {
-              NotisProfileBar(profiles: notisProfiles, selected: selectedProfile) { profile in
-                selectedProfileId = profile.id.uuidString
-              }
-            } else {
-              Spacer()
+        ZStack(alignment: .topTrailing) {
+          if FeatureFlags.homeProfilePicker && !notisProfiles.isEmpty {
+            NotisProfileBar(profiles: notisProfiles, selected: selectedProfile) { profile in
+              selectedProfileId = profile.id.uuidString
             }
-            // Top 4pt: 16pt below the status bar, as on the other tabs.
-            NotisHelpButton { showHomeHelp = true }
-              .padding(.top, 4)
+            .padding(.horizontal, 60)
+            .padding(.top, 12)
+            .frame(maxWidth: .infinity)
           }
-          .padding(.leading, 16)
-          .padding(.trailing, 12)
-          .padding(.top, 12)
-          Spacer()
+          // 16pt below the status bar and 12pt from the edge, as on the other tabs.
+          NotisHelpButton { showHomeHelp = true }
+            .padding(.trailing, 12)
+            .padding(.top, 16)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
       } else if FeatureFlags.homeProfilePicker && !isLocked && !notisProfiles.isEmpty {
         VStack {
           NotisProfileBar(profiles: notisProfiles, selected: selectedProfile) { profile in
