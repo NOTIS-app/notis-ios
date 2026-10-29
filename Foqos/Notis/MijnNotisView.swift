@@ -481,6 +481,9 @@ private struct NewStoneSheet: View {
 struct StonesHelpSheet: View {
   let onDismiss: () -> Void
 
+  /// `FeatureFlags.bedtimeInMyNotis`: the evening lock lives on this screen too.
+  static var explainsBedtime: Bool { FeatureFlags.bedtimeLock && FeatureFlags.bedtimeInMyNotis }
+
   var body: some View {
     VStack(spacing: 16) {
       Image(systemName: "wave.3.right")
@@ -489,7 +492,7 @@ struct StonesHelpSheet: View {
         .frame(width: 56, height: 56)
         .background(NotisBrand.mandarinDark.opacity(0.1), in: Circle())
         .padding(.top, 24)
-      Text("Hoe werken de stenen?")
+      Text(Self.explainsBedtime ? "Hoe werkt Mijn NOTIS?" : "Hoe werken de stenen?")
         .font(.satoshi(20, .bold))
         .foregroundStyle(NotisBrand.ink)
       if FeatureFlags.homeProfilePicker {
@@ -522,6 +525,16 @@ struct StonesHelpSheet: View {
         title: String(localized: "Elke steen ontgrendelt"),
         body: String(localized: "Tik op een van je stenen om het slot te openen.")
       )
+      if Self.explainsBedtime {
+        rule(
+          icon: "moon",
+          title: String(localized: "Avondslot op vaste tijden"),
+          body: String(
+            localized:
+              "Kies een tijd en de dagen: dan gaat je telefoon vanzelf op slot met het profiel dat je kiest. Met een eindtijd is hij 's ochtends weer vrij, anders haalt alleen je NOTIS hem eraf."
+          )
+        )
+      }
       Spacer(minLength: 0)
       Button("Begrepen", action: onDismiss)
         .buttonStyle(NotisPrimaryButtonStyle())

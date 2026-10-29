@@ -116,6 +116,14 @@ enum FeatureFlags {
   /// an orange "Avondslot" button at the top opens the lock times, the profiles follow below.
   /// Needs `bedtimeLock`. Mirrors `FeatureFlags.BEDTIME_IN_MY_NOTIS` on Android.
   static let bedtimeInMyNotis = true
+
+  /// A round "i" at the top right of Settings, explaining its rows like Mijn NOTIS's "i".
+  /// Mirrors `FeatureFlags.SETTINGS_HELP` on Android.
+  static let settingsHelp = true
+
+  /// Onboarding explains parents and children, and teachers, on a page each before the last one.
+  /// Needs the school backend. Mirrors `FeatureFlags.ONBOARDING_ROLES` on Android.
+  static let onboardingRoles = true
 }
 
 enum NotisDevice {

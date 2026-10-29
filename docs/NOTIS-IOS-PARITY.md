@@ -32,6 +32,7 @@ Afwijken mag alleen waar iOS geen keus laat. ✅ = aangepast in iOS, 🍎 = kan 
 | 16b | Steen ingedrukt houden → onderblad "Op slot met welk profiel?" met je profielen (en klassen; alleen als je een steen hebt), hint "Of houd de steen ingedrukt om een profiel te kiezen"; ontgrendelen alleen met een steen | – | ✅ (klassen pas als `schoolLive` aan staat) |
 | 16c | Deze week op Home: een strook met handvat en 🔥 streak die uit de navigatiebalk komt; open (tikken, omhoog vegen, of meteen na ontgrendelen) met totaal, "N dagen op rij" en een staafje per dag met de tijd erboven; tik ernaast of omlaag vegen sluit hem | – | ✅ |
 | 16d | Avondslot staat niet meer bij Instellingen maar bovenaan de tab "Mijn NOTIS" (was "Profielen"): oranje knop "Avondslot · 22:30", daaronder de profielen; eindtijd staat standaard aan, zonder uitlegregels | – | ✅ |
+| 16e | "i" bij Mijn NOTIS legt ook het avondslot uit; "i" rechtsboven bij Instellingen legt Meldingen, Ouder koppelen, Ik ben ouder, Ik ben docent, Toestemmingen en Website uit; onboarding heeft een pagina "Voor ouders en kinderen" en "Voor docenten" | – | ✅ (🍎 ouderteksten zonder "kiest je apps": een iPhone geeft geen app-lijst door) |
 | 17 | Onbekende steen: "Deze steen is niet gekoppeld" | eigen tekst | ✅ |
 
 ## Mijn NOTIS
