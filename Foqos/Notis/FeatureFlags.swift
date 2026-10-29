@@ -124,6 +124,11 @@ enum FeatureFlags {
   /// Onboarding explains parents and children, and teachers, on a page each before the last one.
   /// Needs the school backend. Mirrors `FeatureFlags.ONBOARDING_ROLES` on Android.
   static let onboardingRoles = true
+
+  /// Home gets a round "i" next to a narrower profile bar, explaining Home (the profile, the stone,
+  /// pressing and holding it, the week, the emergency unlock). Its long-press sheet then drops its
+  /// explanation line. Mirrors `FeatureFlags.HOME_HELP` on Android.
+  static let homeHelp = true
 }
 
 enum NotisDevice {

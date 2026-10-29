@@ -18,21 +18,24 @@ struct NotisLockFromAppSheet: View {
           .font(.satoshi(20, .bold))
           .foregroundStyle(NotisBrand.ink)
           .padding(.top, 28)
-        Text(
-          choices.isEmpty
-            ? (FeatureFlags.anyNotisStone
-              ? "Je hebt nog geen profiel. Maak er eerst een bij Mijn NOTIS."
-              : "Je hebt nog geen steen gekoppeld. Koppel er eerst een bij Mijn NOTIS.")
-            : FeatureFlags.homeProfilePicker
-              ? "Je telefoon gaat op slot met het profiel dat je hebt gekozen. Weer vrij geven kan alleen door je telefoon tegen een NOTIS te houden."
-            : FeatureFlags.stoneProfiles
-              ? "De apps van dat profiel blijven bruikbaar. Weer vrij geven kan alleen door je telefoon tegen een NOTIS te houden."
-              : "De apps van die steen blijven bruikbaar. Weer vrij geven kan alleen door je telefoon tegen een NOTIS te houden."
-        )
-        .font(.satoshi(14))
-        .lineSpacing(4)
-        .foregroundStyle(NotisBrand.inkSoft)
-        .padding(.bottom, 6)
+        // `FeatureFlags.homeHelp`: Home's "i" explains locking by hand instead.
+        if !(FeatureFlags.homeHelp && FeatureFlags.homeProfilePicker && !choices.isEmpty) {
+          Text(
+            choices.isEmpty
+              ? (FeatureFlags.anyNotisStone
+                ? "Je hebt nog geen profiel. Maak er eerst een bij Mijn NOTIS."
+                : "Je hebt nog geen steen gekoppeld. Koppel er eerst een bij Mijn NOTIS.")
+              : FeatureFlags.homeProfilePicker
+                ? "Je telefoon gaat op slot met het profiel dat je hebt gekozen. Weer vrij geven kan alleen door je telefoon tegen een NOTIS te houden."
+              : FeatureFlags.stoneProfiles
+                ? "De apps van dat profiel blijven bruikbaar. Weer vrij geven kan alleen door je telefoon tegen een NOTIS te houden."
+                : "De apps van die steen blijven bruikbaar. Weer vrij geven kan alleen door je telefoon tegen een NOTIS te houden."
+          )
+          .font(.satoshi(14))
+          .lineSpacing(4)
+          .foregroundStyle(NotisBrand.inkSoft)
+          .padding(.bottom, 6)
+        }
 
         ForEach(choices) { stone in
           Button {

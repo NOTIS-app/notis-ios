@@ -222,10 +222,9 @@ struct NotisTabsView: View {
     !strategyManager.isBlocking || isEmergencyActive
   }
 
-  /// `FeatureFlags.homeStats`: on Home while free, once there is a finished session.
+  /// `FeatureFlags.homeStats`: on Home while free, also before the first lock (a streak of 0).
   private var showsStats: Bool {
     FeatureFlags.homeStats && tab == .home && !strategyManager.isBlocking && navPillHeight > 0
-      && sessions.contains { $0.endTime != nil }
   }
 
   var body: some View {
