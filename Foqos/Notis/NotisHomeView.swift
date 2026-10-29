@@ -200,7 +200,7 @@ struct NotisHomeView: View {
       // `FeatureFlags.homeHelp`: the bar narrows for a round "i" where the other tabs have it.
       if FeatureFlags.homeHelp && !isLocked {
         VStack {
-          HStack(spacing: 8) {
+          HStack(alignment: .top, spacing: 8) {
             if FeatureFlags.homeProfilePicker && !notisProfiles.isEmpty {
               NotisProfileBar(profiles: notisProfiles, selected: selectedProfile) { profile in
                 selectedProfileId = profile.id.uuidString
@@ -208,7 +208,9 @@ struct NotisHomeView: View {
             } else {
               Spacer()
             }
+            // Top 4pt: 16pt below the status bar, as on the other tabs.
             NotisHelpButton { showHomeHelp = true }
+              .padding(.top, 4)
           }
           .padding(.leading, 16)
           .padding(.trailing, 12)
