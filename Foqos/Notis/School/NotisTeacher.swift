@@ -48,6 +48,8 @@ final class NotisTeacher: ObservableObject {
     case teacher, parent, admin
   }
 
+  /// The signed-in account's UUID; an anonymous parent account has no [email].
+  @Published private(set) var userId: String?
   @Published private(set) var email: String?
   @Published private(set) var role: AccountRole?
   /// The room whose live list is open (stone tapped or picked), or nil.
@@ -56,16 +58,20 @@ final class NotisTeacher: ObservableObject {
   var isTeacher: Bool { role == .teacher }
   var isParent: Bool { role == .parent }
   var isAdmin: Bool { role == .admin }
+  var isSignedIn: Bool { userId != nil }
+  /// The first part of the UUID, enough to tell accounts apart (for example for support).
+  var shortId: String { userId.map { String($0.prefix(while: { $0 != "-" })).lowercased() } ?? "" }
 
   private var client: SupabaseClient { SchoolBackend.accountClient }
 
   private init() {
-    email = client.auth.currentUser?.email
+    userId = client.auth.currentUser?.id.uuidString
+    email = client.auth.currentUser?.email.flatMap { $0.isEmpty ? nil : $0 }
     let defaults = UserDefaults.standard
     // Before parents, only a teacher flag was kept.
     let stored = defaults.string(forKey: Self.roleKey)
       ?? (defaults.bool(forKey: Self.legacyTeacherKey) ? AccountRole.teacher.rawValue : nil)
-    role = email == nil ? nil : stored.flatMap(AccountRole.init(rawValue:))
+    role = userId == nil ? nil : stored.flatMap(AccountRole.init(rawValue:))
   }
 
   private static let roleKey = "notis.account.role"
@@ -116,6 +122,18 @@ final class NotisTeacher: ObservableObject {
     setSignedIn(as: .parent)
   }
 
+  /// `FeatureFlags.anonymousParents`: a parent account without email or password, only a UUID.
+  /// NOTIS stores nothing that says who the parent is. It lives on this phone only: signing out
+  /// would lose it, so the app offers deleting it instead.
+  func startParent() async throws {
+    do {
+      try await client.auth.signInAnonymously(data: ["role": .string("parent")])
+    } catch {
+      throw SignInError.failed
+    }
+    setSignedIn(as: .parent)
+  }
+
   /// Teacher when listed in `teachers`, admin when in `platform_admins`, parent otherwise.
   private func currentRole() async -> AccountRole {
     let teacher: Bool = (try? await client.rpc("is_teacher").execute().value) ?? false
@@ -125,7 +143,8 @@ final class NotisTeacher: ObservableObject {
   }
 
   private func setSignedIn(as newRole: AccountRole) {
-    email = client.auth.currentUser?.email
+    userId = client.auth.currentUser?.id.uuidString
+    email = client.auth.currentUser?.email.flatMap { $0.isEmpty ? nil : $0 }
     role = newRole
     UserDefaults.standard.set(newRole.rawValue, forKey: Self.roleKey)
   }
@@ -138,6 +157,7 @@ final class NotisTeacher: ObservableObject {
 
   func signOut() async {
     try? await client.auth.signOut()
+    userId = nil
     email = nil
     role = nil
     openRoom = nil

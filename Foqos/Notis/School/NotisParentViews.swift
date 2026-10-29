@@ -114,13 +114,11 @@ struct NotisParentLinkSheet: View {
 
 // MARK: - Parent's phone: "Kind toevoegen"
 
-/// Parent's phone: the code from the child's phone and the child's name.
+/// Parent's phone: the code from the child's phone. No names (AVG).
 struct NotisAddChildSheet: View {
   let onDone: (_ linked: Bool) -> Void
 
   @State private var code = ""
-  @State private var name = ""
-  @State private var parentName = ""
   @State private var isBusy = false
   @State private var errorText: String?
   @State private var isScanning = false
@@ -144,11 +142,6 @@ struct NotisAddChildSheet: View {
       NotisTextField(title: "Koppelcode", text: $code, isSecure: false)
         .textInputAutocapitalization(.characters)
         .autocorrectionDisabled()
-      NotisTextField(title: "Naam van je kind", text: $name, isSecure: false)
-        .textInputAutocapitalization(.words)
-      // Shown on the child's phone ("Mama").
-      NotisTextField(title: "Jouw naam, zoals je kind je noemt", text: $parentName, isSecure: false)
-        .textInputAutocapitalization(.words)
       if let errorText {
         Text(errorText).font(.satoshi(13)).foregroundStyle(.red)
       }
@@ -156,8 +149,6 @@ struct NotisAddChildSheet: View {
         title: String(localized: "Koppelen"),
         isBusy: isBusy,
         isEnabled: !code.trimmingCharacters(in: .whitespaces).isEmpty
-          && !name.trimmingCharacters(in: .whitespaces).isEmpty
-          && !parentName.trimmingCharacters(in: .whitespaces).isEmpty
       ) {
         Task { await link() }
       }
@@ -188,7 +179,7 @@ struct NotisAddChildSheet: View {
     isBusy = true
     errorText = nil
     do {
-      try await NotisParent.shared.linkChild(code: code, name: String(name.prefix(40)), parentName: parentName)
+      try await NotisParent.shared.linkChild(code: code)
       onDone(true)
     } catch NotisParent.LinkError.codeInvalid {
       errorText = String(localized: "Deze code is onbekend of verlopen. Vraag om een nieuwe code.")
@@ -223,8 +214,8 @@ struct NotisChildAppsSheet: View {
             Section {
               Text(
                 apps.isEmpty
-                  ? "De telefoon van \(child.name) heeft nog geen app-lijst doorgegeven. Open NOTIS op die telefoon en probeer het daarna opnieuw. Een iPhone geeft geen apps door."
-                  : "Kies welke apps \(child.name) mag gebruiken als de telefoon op slot staat. \(child.name) kan apps uitzetten, maar niet toevoegen. Wijzigingen staan binnen 15 minuten op de telefoon, of zodra NOTIS daar opent."
+                  ? "De telefoon van je kind heeft nog geen app-lijst doorgegeven. Open NOTIS op die telefoon en probeer het daarna opnieuw. Een iPhone geeft geen apps door."
+                  : "Kies welke apps je kind mag gebruiken als de telefoon op slot staat. Je kind kan apps uitzetten, maar niet toevoegen. Wijzigingen staan binnen 15 minuten op de telefoon, of zodra NOTIS daar opent."
               )
               .font(.satoshi(14))
               .foregroundStyle(NotisBrand.inkSoft)
@@ -242,7 +233,7 @@ struct NotisChildAppsSheet: View {
             }
             if rule != nil {
               Section {
-                Button("Lijst verwijderen, \(child.name) kiest weer zelf", role: .destructive) {
+                Button("Lijst verwijderen, je kind kiest weer zelf", role: .destructive) {
                   Task { await save(nil) }
                 }
               }
@@ -254,7 +245,7 @@ struct NotisChildAppsSheet: View {
           ProgressView().tint(NotisBrand.mandarinDark)
         }
       }
-      .navigationTitle("Apps voor \(child.name)")
+      .navigationTitle("Apps voor \(child.label)")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {

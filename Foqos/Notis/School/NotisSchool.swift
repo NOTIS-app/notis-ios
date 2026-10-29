@@ -44,18 +44,18 @@ struct SchoolStone: Codable, Equatable {
   }
 }
 
-/// A parent who follows this phone; shown on the child's phone so it always knows who.
+/// A parent who follows this phone; shown on the child's phone so it always knows who. Parents
+/// are not named (AVG): the phone says "Ouder", or "Ouder 1", "Ouder 2". [guardianEmail] and
+/// [guardianName] only keep lists stored by older versions readable; they are no longer filled.
 struct LinkedGuardian: Codable, Equatable, Identifiable {
   let guardianUserId: String
-  let guardianEmail: String
-  /// What the parent typed when linking ("Mama"); nil for links made before that existed.
+  var guardianEmail: String? = nil
   var guardianName: String? = nil
   var id: String { guardianUserId }
 
-  /// How the child's phone names this parent.
-  var displayName: String {
-    if let name = guardianName, !name.isEmpty { return name }
-    return guardianEmail.isEmpty ? String(localized: "Ouder") : guardianEmail
+  /// "Ouder", or "Ouder 2" when more than one parent follows this phone.
+  static func label(index: Int, count: Int) -> String {
+    count > 1 ? String(localized: "Ouder \(index + 1)") : String(localized: "Ouder")
   }
 
   enum CodingKeys: String, CodingKey {
@@ -264,20 +264,13 @@ final class NotisSchool: ObservableObject {
   func refreshGuardians() async {
     do {
       let uid = try await SchoolBackend.ensureStudentSignedIn()
-      func read(_ columns: String) async throws -> [LinkedGuardian] {
-        try await client.from("guardians")
-          .select(columns)
-          .eq("child_user_id", value: uid.uuidString)
-          .filter("unlinked_at", operator: "is", value: "null")
-          .execute().value
-      }
-      // guardian_name needs migration 20261105000000_guardian_name.sql; without it, no names.
-      let rows: [LinkedGuardian]
-      do {
-        rows = try await read("guardian_user_id, guardian_email, guardian_name")
-      } catch {
-        rows = try await read("guardian_user_id, guardian_email")
-      }
+      // Only who, never a name or email: the phone just says "Ouder".
+      let rows: [LinkedGuardian] = try await client.from("guardians")
+        .select("guardian_user_id")
+        .eq("child_user_id", value: uid.uuidString)
+        .filter("unlinked_at", operator: "is", value: "null")
+        .order("created_at", ascending: true)
+        .execute().value
       setGuardians(rows)
     } catch {
       print("NotisSchool refreshGuardians failed: \(error)")

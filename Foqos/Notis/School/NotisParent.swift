@@ -4,7 +4,9 @@ import Supabase
 /// A child as their parent sees it: the link, and the phone's last reported status.
 struct ChildStatus: Identifiable, Equatable {
   let userId: String
-  let name: String
+  /// Children are not named (AVG): the parent sees "Kind", or "Kind 1", "Kind 2" in the order
+  /// they were linked. Nil when this is the only child.
+  let number: Int?
   /// Set when the child unlinked this parent; no status is visible then.
   let unlinkedAt: Date?
   let state: String?
@@ -13,6 +15,10 @@ struct ChildStatus: Identifiable, Equatable {
   /// Locked by the school (checked in to a classroom), not by an own stone.
   var atSchool = false
   var id: String { userId }
+
+  var label: String {
+    number.map { String(localized: "Kind \($0)") } ?? String(localized: "Kind")
+  }
 }
 
 /// An app as a child's Android phone reports it to its parents: they can only pick from these.
@@ -42,8 +48,8 @@ final class NotisParent {
 
   private struct GuardianRow: Decodable {
     let child_user_id: String
-    let child_name: String
     let unlinked_at: Date?
+    let created_at: Date?
   }
 
   private struct DeviceStatusRow: Decodable {
@@ -54,12 +60,13 @@ final class NotisParent {
     let room_id: String?
   }
 
-  /// The parent's children, by name; throws when offline.
+  /// The parent's children, in the order they were linked; throws when offline.
   func children() async throws -> [ChildStatus] {
     guard let uid = client.auth.currentUser?.id else { return [] }
     let links: [GuardianRow] = try await client.from("guardians")
-      .select("child_user_id, child_name, unlinked_at")
+      .select("child_user_id, unlinked_at, created_at")
       .eq("guardian_user_id", value: uid.uuidString)
+      .order("created_at", ascending: true)
       .execute().value
     let active = links.filter { $0.unlinked_at == nil }.map(\.child_user_id)
     var statuses: [String: DeviceStatusRow] = [:]
@@ -70,11 +77,11 @@ final class NotisParent {
         .execute().value
       for row in rows { statuses[row.user_id.lowercased()] = row }
     }
-    return links.map { link in
+    return links.enumerated().map { index, link in
       let status = statuses[link.child_user_id.lowercased()]
       return ChildStatus(
         userId: link.child_user_id,
-        name: link.child_name,
+        number: links.count > 1 ? index + 1 : nil,
         unlinkedAt: link.unlinked_at,
         state: status?.state,
         stateChangedAt: status?.state_changed_at,
@@ -83,40 +90,18 @@ final class NotisParent {
         atSchool: status?.room_id != nil && status?.state == "locked"
       )
     }
-    .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
   }
 
   private struct RedeemParams: Encodable {
     let p_code: String
-    let p_child_name: String
   }
 
-  private struct RedeemNamedParams: Encodable {
-    let p_code: String
-    let p_child_name: String
-    let p_guardian_name: String
-  }
-
-  /// Redeems the code shown on the child's phone. [parentName] is what the child's phone shows
-  /// for this parent ("Mama"); a server without migration 20261105000000_guardian_name.sql
-  /// links without it.
-  func linkChild(code: String, name: String, parentName: String) async throws {
+  /// Redeems the code shown on the child's phone. No names are sent: NOTIS stores neither the
+  /// child's nor the parent's name (migration 20261108000000_anonymous_parents.sql).
+  func linkChild(code: String) async throws {
     let code = code.trimmingCharacters(in: .whitespaces).uppercased()
-    let name = name.trimmingCharacters(in: .whitespaces)
     do {
-      do {
-        try await client.rpc(
-          "redeem_link_code",
-          params: RedeemNamedParams(
-            p_code: code, p_child_name: name,
-            p_guardian_name: String(parentName.trimmingCharacters(in: .whitespaces).prefix(40))
-          )
-        ).execute()
-      } catch where "\(error)".contains("PGRST202") {
-        try await client.rpc(
-          "redeem_link_code", params: RedeemParams(p_code: code, p_child_name: name)
-        ).execute()
-      }
+      try await client.rpc("redeem_link_code", params: RedeemParams(p_code: code)).execute()
     } catch {
       let text = "\(error)"
       if text.contains("Unknown or expired link code") { throw LinkError.codeInvalid }

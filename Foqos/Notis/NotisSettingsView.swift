@@ -31,6 +31,8 @@ struct NotisSettingsView: View {
   @State private var showNothingToDelete = false
   /// The login sheet that is open: "Ik ben docent", "Ik ben ouder" or the hidden admin login.
   @State private var loginRole: NotisTeacher.AccountRole?
+  @State private var showStartParent = false
+  @State private var startParentFailed = false
   @State private var showParentLink = false
   @State private var unlinkingGuardian: LinkedGuardian?
   @State private var children: [ChildStatus] = []
@@ -116,10 +118,11 @@ struct NotisSettingsView: View {
               }
               if FeatureFlags.parentControls {
                 // Always visible on the child's phone: who can see whether NOTIS is locked.
-                ForEach(school.guardians) { guardian in
+                // Parents are not named: "Ouder", or "Ouder 1", "Ouder 2" in the order they linked.
+                ForEach(Array(school.guardians.enumerated()), id: \.element.id) { index, guardian in
                   SettingsRow(
                     icon: "figure.and.child.holdinghands",
-                    title: guardian.displayName,
+                    title: LinkedGuardian.label(index: index, count: school.guardians.count),
                     subtitle: String(localized: "Kan zien of NOTIS gelocked is"),
                     showsChevron: false,
                     onRemove: { unlinkingGuardian = guardian }
@@ -202,7 +205,7 @@ struct NotisSettingsView: View {
               title: String(localized: "Mijn gegevens wissen"),
               titleColor: NotisPalette.light.error,
               subtitle: deletesAccount
-                ? String(localized: "Verwijdert ook je account \(teacher.email ?? "")")
+                ? String(localized: "Verwijdert ook je account \(teacher.email ?? teacher.shortId)")
                 : nothingStored
                   ? String(localized: "Niets te wissen: geen school, ouder of account")
                   : String(localized: "Haalt je school, naam, status en ouders weg bij NOTIS"),
@@ -219,6 +222,27 @@ struct NotisSettingsView: View {
     }
     .onAppear {
       requestAuthorizer.refreshAuthorizationStatus()
+    }
+    .alert(String(localized: "Ouder-account starten"), isPresented: $showStartParent) {
+      Button("Starten") {
+        Task {
+          do {
+            try await teacher.startParent()
+          } catch {
+            startParentFailed = true
+          }
+        }
+      }
+      Button("Annuleren", role: .cancel) {}
+    } message: {
+      Text(
+        "Je vult geen e-mail, wachtwoord of naam in. NOTIS maakt een anoniem account met een unieke code, alleen op deze telefoon. Ben je de telefoon kwijt of verwijder je NOTIS, koppel dan opnieuw met een nieuwe code van je kind."
+      )
+    }
+    .alert(String(localized: "Starten lukte niet"), isPresented: $startParentFailed) {
+      Button("OK", role: .cancel) {}
+    } message: {
+      Text("Controleer je internet en probeer het opnieuw.")
     }
     .sheet(item: $loginRole) { role in
       NotisTeacherLoginSheet(teacher: teacher, role: role) { loginRole = nil }
@@ -268,7 +292,7 @@ struct NotisSettingsView: View {
       Text("Je ouder ziet dan niet meer of NOTIS gelocked is, en ziet dat je hebt ontkoppeld.")
     }
     .alert(
-      String(localized: "\(removingChild?.name ?? "") verwijderen?"),
+      String(localized: "\(removingChild?.label ?? "") verwijderen?"),
       isPresented: Binding(get: { removingChild != nil }, set: { if !$0 { removingChild = nil } })
     ) {
       Button("Verwijderen", role: .destructive) {
@@ -331,7 +355,7 @@ struct NotisSettingsView: View {
     } message: {
       if deletesAccount {
         Text(
-          "NOTIS wist alles wat het over deze telefoon bewaart (je school, naam, status en gekoppelde ouders) en verwijdert je account \(teacher.email ?? "") met alles wat eraan gekoppeld is (voor een ouder: de koppelingen met je kinderen en de app-lijsten die je instelde). Je profielen en instellingen op deze telefoon blijven. Dit kan niet ongedaan worden."
+          "NOTIS wist alles wat het over deze telefoon bewaart (je school, naam, status en gekoppelde ouders) en verwijdert je account \(teacher.email ?? teacher.shortId) met alles wat eraan gekoppeld is (voor een ouder: de koppelingen met je kinderen en de app-lijsten die je instelde). Je profielen en instellingen op deze telefoon blijven. Dit kan niet ongedaan worden."
         )
       } else {
         Text(
@@ -461,7 +485,7 @@ struct NotisSettingsView: View {
   }
 
   private func tapAbout() {
-    guard FeatureFlags.rooms, teacher.email == nil else { return }
+    guard FeatureFlags.rooms, !teacher.isSignedIn else { return }
     let now = Date()
     aboutTaps = now.timeIntervalSince(lastAboutTap) < 1.5 ? aboutTaps + 1 : 1
     lastAboutTap = now
@@ -524,7 +548,9 @@ struct NotisSettingsView: View {
             icon: "figure.and.child.holdinghands",
             title: String(localized: "Ik ben ouder"),
             subtitle: FeatureFlags.lessText ? nil : String(localized: "Zie of NOTIS van je kind gelocked is"),
-            action: { loginRole = .parent }
+            action: {
+              if FeatureFlags.anonymousParents { showStartParent = true } else { loginRole = .parent }
+            }
           )
         }
         SettingsRow(
@@ -556,7 +582,28 @@ struct NotisSettingsView: View {
       signOutCard(String(localized: "Docent: \(teacher.email ?? "")"))
     case .parent:
       childrenCard
-      signOutCard(String(localized: "Ouder: \(teacher.email ?? "")"), canDelete: true)
+      if let email = teacher.email {
+        signOutCard(String(localized: "Ouder: \(email)"), canDelete: true)
+      } else {
+        // An anonymous parent account can't sign in again: signing out would lose it for good,
+        // so it only shows its id here and is removed with "Mijn gegevens wissen".
+        SettingsCard {
+          SettingsRow(
+            icon: "figure.and.child.holdinghands",
+            title: String(localized: "Ouder-account"),
+            subtitle: String(localized: "Account-ID \(teacher.shortId) · zonder e-mail of naam, alleen op deze telefoon"),
+            showsChevron: false
+          )
+          if FeatureFlags.separateAccountDelete {
+            SettingsRow(
+              icon: "trash",
+              title: String(localized: "Account verwijderen"),
+              subtitle: String(localized: "Verwijdert \(teacher.shortId) en alles wat eraan gekoppeld is"),
+              action: { showDeleteAccount = true }
+            )
+          }
+        }
+      }
     case .admin:
       // NOTIS admins (hidden login): prepare stones, then link the school stones.
       SettingsCard {
@@ -609,7 +656,7 @@ struct NotisSettingsView: View {
           SettingsRow(
             icon: "link",
             iconColor: NotisBrand.inkSoft,
-            title: child.name,
+            title: child.label,
             subtitle: String(
               localized: "Ontkoppeld door je kind op \(unlinkedAt.formatted(date: .abbreviated, time: .shortened))"
             ),
@@ -620,7 +667,7 @@ struct NotisSettingsView: View {
           SettingsRow(
             icon: visual.icon,
             iconColor: visual.tint,
-            title: child.name,
+            title: child.label,
             subtitle: visual.subtitle,
             action: FeatureFlags.allowList ? { childApps = child } : nil,
             onRemove: { removingChild = child }
@@ -628,7 +675,7 @@ struct NotisSettingsView: View {
         } else {
           SettingsRow(
             icon: "figure.and.child.holdinghands",
-            title: child.name,
+            title: child.label,
             subtitle: String(localized: "Gekoppeld · wacht op de eerste status"),
             action: FeatureFlags.allowList ? { childApps = child } : nil,
             onRemove: { removingChild = child }
