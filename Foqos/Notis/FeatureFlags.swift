@@ -67,6 +67,12 @@ enum FeatureFlags {
   /// Mirrors `FeatureFlags.SEPARATE_ACCOUNT_DELETE` on Android.
   static let separateAccountDelete = false
 
+  /// AVG: a parent account has no email or password, only an anonymous UUID on this phone, and
+  /// nobody's name is stored: the apps say "Ouder" and "Kind". A lost phone means linking again.
+  /// Off: parents sign up with email + password. Needs migration 20261108000000_anonymous_parents.sql.
+  /// Mirrors `FeatureFlags.ANONYMOUS_PARENTS` on Android.
+  static let anonymousParents = true
+
   /// No pairing: every stone with a valid personal seal (`sealedStones`) locks with the profile
   /// picked on Home and unlocks again. "Mijn NOTIS" only lists the profiles. Stones paired
   /// before keep working. A school stone never locks with an own profile. Off: only paired

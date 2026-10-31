@@ -157,6 +157,13 @@ class NotisStoneBlockingStrategy: BlockingStrategy {
     MainActor.assumeIsolated {
       let school = NotisSchool.shared
       if let room = school.roomFor(uid: uid) {
+        // The server wiped the name: ask for a new one first, as when joining. (Only here,
+        // while free: during a school lock the room's stone must always end it.)
+        if let joined = school.school, joined.needsName == true {
+          nfcScanner.resultMessage = String(localized: "Steen gelezen")
+          school.pendingInvite = SchoolInvite(uid: uid, schoolId: joined.schoolId, schoolName: joined.name)
+          return
+        }
         // Checked out after the last lesson: the school's stones don't lock again today.
         if school.isCheckedOutToday {
           nfcScanner.resultErrorMessage = String(

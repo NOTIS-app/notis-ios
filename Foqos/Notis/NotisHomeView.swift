@@ -278,6 +278,8 @@ struct NotisHomeView: View {
         schoolName: invite.schoolName,
         initialName: school.displayName,
         onJoin: { name in
+          // A new name for the school this phone is already in: no app choice afterwards.
+          let isNewSchool = school.school?.schoolId != invite.schoolId
           try await school.joinByStone(uid: invite.uid, displayName: name)
           school.pendingInvite = nil
           // The tap that brought up this sheet also locks, in that stone's room.
@@ -285,9 +287,11 @@ struct NotisHomeView: View {
             strategyManager.startNotisSchoolWithoutScan(context: context, room: room)
           }
           // Choosing is open right after joining: offer it once the join sheet has closed.
-          Task {
-            try? await Task.sleep(for: .milliseconds(700))
-            showSchoolApps = true
+          if isNewSchool {
+            Task {
+              try? await Task.sleep(for: .milliseconds(700))
+              showSchoolApps = true
+            }
           }
         },
         onCancel: { school.pendingInvite = nil }
