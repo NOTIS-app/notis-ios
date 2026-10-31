@@ -89,9 +89,9 @@ struct NotisSettingsView: View {
             }
           }
 
-          // Same layout as Android: SCHOOL & OUDERS (StudentClassCard), then the account.
+          // Same layout as Android: OUDERS & SCHOOL (StudentClassCard), then the account.
           if FeatureFlags.rooms {
-            Text("SCHOOL & OUDERS")
+            Text("OUDERS & SCHOOL")
               .font(.satoshi(12, .bold))
               .tracking(1)
               .foregroundStyle(NotisBrand.inkSoft)

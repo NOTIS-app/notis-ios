@@ -24,6 +24,7 @@ struct NotisHomeView: View {
   @State private var showScanHint = false
   @State private var showEmergencySheet = false
   @State private var showLockFromAppSheet = false
+  @State private var showHomeHelp = false
   @State private var showSchoolApps = false
   @State private var showRecoveryCode = false
   @State private var showTeacherRooms = false
@@ -127,6 +128,38 @@ struct NotisHomeView: View {
     return NotisBrand.paper
   }
 
+  /// Android's Home help (`FeatureFlags.homeHelp`).
+  private var homeHelpItems: [NotisHelpItem] {
+    var items = [
+      NotisHelpItem(
+        icon: "square.grid.2x2", title: String(localized: "Kies je profiel"),
+        body: String(localized: "Bovenaan kies je met welk profiel je op slot gaat. De apps van dat profiel blijven bruikbaar.")),
+      NotisHelpItem(
+        icon: "wave.3.right", title: String(localized: "Op slot met je NOTIS"),
+        body: String(localized: "Tik op de steen en houd je iPhone tegen een NOTIS-steen: op slot. Nog een keer: weer vrij.")),
+    ]
+    if FeatureFlags.lockFromApp {
+      items.append(
+        NotisHelpItem(
+          icon: "hand.tap", title: String(localized: "Steen ingedrukt houden"),
+          body: String(
+            localized:
+              "Houd de steen op je scherm ingedrukt om meteen op slot te gaan. Weer vrij geven kan alleen door je iPhone tegen een NOTIS te houden."
+          )))
+    }
+    if FeatureFlags.homeStats {
+      items.append(
+        NotisHelpItem(
+          icon: "flame", title: String(localized: "Deze week"),
+          body: String(localized: "Onderaan zie je hoeveel dagen op rij je op slot bent geweest. Veeg omhoog voor je tijd per dag.")))
+    }
+    items.append(
+      NotisHelpItem(
+        icon: "lock.open", title: String(localized: "Noodontgrendeling"),
+        body: String(localized: "Echt nodig tijdens een slot? Houd de knop onderaan ingedrukt voor 5 minuten toegang, twee keer per slot.")))
+    return items
+  }
+
   var body: some View {
     ZStack {
       background.ignoresSafeArea()
@@ -164,7 +197,25 @@ struct NotisHomeView: View {
         }
       }
 
-      if FeatureFlags.homeProfilePicker && !isLocked && !notisProfiles.isEmpty {
+      // `FeatureFlags.homeHelp`: a round "i" where the other tabs have it; the bar stays centred,
+      // as far from both edges as the "i" needs (12 + 40 + 8 pt).
+      if FeatureFlags.homeHelp && !isLocked {
+        ZStack(alignment: .topTrailing) {
+          if FeatureFlags.homeProfilePicker && !notisProfiles.isEmpty {
+            NotisProfileBar(profiles: notisProfiles, selected: selectedProfile) { profile in
+              selectedProfileId = profile.id.uuidString
+            }
+            .padding(.horizontal, 60)
+            .padding(.top, 12)
+            .frame(maxWidth: .infinity)
+          }
+          // 16pt below the status bar and 12pt from the edge, as on the other tabs.
+          NotisHelpButton { showHomeHelp = true }
+            .padding(.trailing, 12)
+            .padding(.top, 16)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+      } else if FeatureFlags.homeProfilePicker && !isLocked && !notisProfiles.isEmpty {
         VStack {
           NotisProfileBar(profiles: notisProfiles, selected: selectedProfile) { profile in
             selectedProfileId = profile.id.uuidString
@@ -208,6 +259,11 @@ struct NotisHomeView: View {
       )
       .presentationDetents([.height(380)])
       .presentationBackground(NotisBrand.paper)
+    }
+    .sheet(isPresented: $showHomeHelp) {
+      NotisHelpSheet(icon: "house", title: "Hoe werkt Home?", items: homeHelpItems) { showHomeHelp = false }
+        .presentationDetents([.large])
+        .presentationBackground(NotisBrand.boneLight)
     }
     .sheet(isPresented: $showLockFromAppSheet) {
       NotisLockFromAppSheet(choices: lockChoices) { stone in
