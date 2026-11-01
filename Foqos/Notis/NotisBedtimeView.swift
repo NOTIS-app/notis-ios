@@ -210,7 +210,7 @@ private struct NotisBedtimeEditView: View {
           Text("Herhaal")
             .font(.satoshi(16, .bold))
             .foregroundStyle(NotisBrand.ink)
-          HStack(spacing: 6) {
+          HStack(spacing: 4) {
             ForEach(NotisBedtime.dayOrder, id: \.self) { dayIndex in
               dayChip(dayIndex)
             }
@@ -300,12 +300,14 @@ private struct NotisBedtimeEditView: View {
     return Button {
       days ^= bit
     } label: {
+      // Fixed circles spread over the row; a flexible width with aspectRatio collapsed inside the ScrollView.
       Text(NotisBedtime.dayShort(dayIndex))
-        .font(.satoshi(13, .bold))
+        .font(.satoshi(14, .bold))
         .foregroundStyle(isOn ? .white : NotisBrand.mandarinDark)
-        .frame(maxWidth: .infinity)
-        .aspectRatio(1, contentMode: .fit)
+        .frame(width: 40, height: 40)
         .background(Circle().fill(isOn ? NotisBrand.mandarinDark : NotisBrand.mandarinDark.opacity(0.1)))
+        .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
   }
