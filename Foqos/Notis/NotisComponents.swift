@@ -146,7 +146,7 @@ struct NotisNavBar: View {
       if FeatureFlags.anyNotisStone && !FeatureFlags.bedtimeInMyNotis {
         item(.stones, label: "Profielen", icon: "square.grid.2x2", selectedIcon: "square.grid.2x2.fill")
       } else {
-        item(.stones, label: "Mijn NOTIS", icon: "wave.3.right.circle", selectedIcon: "wave.3.right.circle.fill")
+        item(.stones, label: "Mijn NOTIS", icon: "square.grid.3x3", selectedIcon: "square.grid.3x3.fill")
       }
       item(.home, label: "Home", icon: "house", selectedIcon: "house.fill")
       item(.settings, label: "Instellingen", icon: "gearshape", selectedIcon: "gearshape.fill")
