@@ -12,6 +12,12 @@ enum FeatureFlags {
   /// Off: each stone lists the apps to block.
   static let allowList = true
 
+  /// Each profile chooses how its apps work: "Gekozen apps blokkeren" or "Alleen gekozen apps
+  /// toestaan" (`enableAllowMode`), plus "Ook websites blokkeren" (`enableSafariBlocking`: the
+  /// websites of the chosen apps and categories, or in allow mode every website but the chosen
+  /// ones). A new profile goes on with "Kies apps". Mirrors `FeatureFlags.PROFILE_MODE` on Android.
+  static let profileMode = true
+
   /// Long-press the stone button to unlock without a stone (limited count).
   static let emergencyUnlock = true
 

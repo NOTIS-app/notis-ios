@@ -34,20 +34,23 @@ extension BlockedProfiles {
     a.order != b.order ? a.order < b.order : a.createdAt < b.createdAt
   }
 
-  /// A new profile with no apps chosen yet (with the allowlist: everything blocked).
+  /// A new profile with no apps chosen yet (in allow mode: everything blocked).
   static func createNotisProfile(
     in context: ModelContext,
     name: String,
-    selection: FamilyActivitySelection = FamilyActivitySelection(includeEntireCategory: FeatureFlags.allowList)
+    allowMode: Bool = FeatureFlags.allowList,
+    blockWebsites: Bool = true,
+    selection: FamilyActivitySelection? = nil
   ) throws -> BlockedProfiles {
     try createProfile(
       in: context,
       name: name,
-      selection: selection,
+      selection: selection ?? FamilyActivitySelection(includeEntireCategory: allowMode),
       blockingStrategyId: NotisStoneBlockingStrategy.id,
       askForStartSettings: false,
       enableLiveActivity: NotisNotifications.isEnabled,
-      enableAllowMode: FeatureFlags.allowList,
+      enableAllowMode: allowMode,
+      enableSafariBlocking: blockWebsites,
       physicalUnblockItems: [],
       enableEmergencyUnblock: FeatureFlags.emergencyUnlock
     )
@@ -111,6 +114,25 @@ extension BlockedProfiles {
 
   static func renameNotisProfile(_ profile: BlockedProfiles, to name: String, in context: ModelContext) throws {
     profile.name = name
+    try saveNotisProfile(profile, in: context)
+  }
+
+  /// `FeatureFlags.profileMode`: block or allow the chosen apps, and whether their websites are
+  /// blocked too. The chosen apps stay; in allow mode a chosen category must stand for all its
+  /// apps, so the selection is rebuilt with that setting when the mode changes.
+  static func setNotisMode(
+    _ profile: BlockedProfiles, allowMode: Bool, blockWebsites: Bool, in context: ModelContext
+  ) throws {
+    if profile.enableAllowMode != allowMode {
+      let old = profile.selectedActivity
+      var selection = FamilyActivitySelection(includeEntireCategory: allowMode)
+      selection.applicationTokens = old.applicationTokens
+      selection.categoryTokens = old.categoryTokens
+      selection.webDomainTokens = old.webDomainTokens
+      profile.selectedActivity = selection
+      profile.enableAllowMode = allowMode
+    }
+    profile.enableSafariBlocking = blockWebsites
     try saveNotisProfile(profile, in: context)
   }
 

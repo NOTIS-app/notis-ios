@@ -27,8 +27,8 @@ extension BlockedProfiles {
     }
     switch count {
     case 0: return String(localized: "Nog geen apps · tik om te kiezen")
-    case 1: return String(localized: "1 app")
-    default: return String(localized: "\(count) apps")
+    case 1: return String(localized: "1 app geblokkeerd")
+    default: return String(localized: "\(count) apps geblokkeerd")
     }
   }
 
