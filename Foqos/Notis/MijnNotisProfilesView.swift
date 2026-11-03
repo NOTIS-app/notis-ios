@@ -182,9 +182,12 @@ struct MijnNotisProfilesView: View {
       NotisProfileEditSheet(
         title: edit.profile == nil ? "Nieuw profiel" : "Profiel bewerken",
         initialName: edit.profile?.name ?? String(localized: "Profiel \(profiles.count + 1)"),
-        initialIcon: edit.profile?.notisIcon ?? .apps
-      ) { name, icon in
-        saveProfile(edit, name: name, icon: icon)
+        initialIcon: edit.profile?.notisIcon ?? .apps,
+        isNew: edit.profile == nil,
+        initialAllowMode: edit.profile?.enableAllowMode ?? FeatureFlags.allowList,
+        initialBlockWebsites: edit.profile?.enableSafariBlocking ?? false
+      ) { name, icon, allowMode, blockWebsites in
+        saveProfile(edit, name: name, icon: icon, allowMode: allowMode, blockWebsites: blockWebsites)
         profileEdit = nil
       }
       .presentationDetents([.large])
@@ -406,13 +409,22 @@ struct MijnNotisProfilesView: View {
     }
   }
 
-  private func saveProfile(_ edit: ProfileEdit, name: String, icon: NotisProfileIcon) {
+  private func saveProfile(
+    _ edit: ProfileEdit, name: String, icon: NotisProfileIcon, allowMode: Bool, blockWebsites: Bool
+  ) {
     do {
       if let profile = edit.profile {
         try BlockedProfiles.renameNotisProfile(profile, to: name, in: context)
         BlockedProfiles.setNotisIcon(icon, for: profile)
+        if FeatureFlags.profileMode {
+          try BlockedProfiles.setNotisMode(profile, allowMode: allowMode, blockWebsites: blockWebsites, in: context)
+        }
       } else {
-        let profile = try BlockedProfiles.createNotisProfile(in: context, name: name)
+        // "Kies apps": the apps sheet opens once this sheet is gone (`openNewProfileApps`).
+        let profile = try FeatureFlags.profileMode
+          ? BlockedProfiles.createNotisProfile(
+            in: context, name: name, allowMode: allowMode, blockWebsites: blockWebsites)
+          : BlockedProfiles.createNotisProfile(in: context, name: name)
         BlockedProfiles.setNotisIcon(icon, for: profile)
         newProfile = profile
       }
@@ -624,15 +636,22 @@ private struct NewStoneProfileSheet: View {
   }
 }
 
-/// New profile or "Bewerken": its name and icon (Android: `ProfileEditSheet`).
+/// New profile or "Bewerken": its name, icon and (`FeatureFlags.profileMode`) whether it blocks
+/// or allows the chosen apps, and whether it blocks their websites too. A new profile goes on
+/// with "Kies apps" (Android: `ProfileEditSheet`).
 struct NotisProfileEditSheet: View {
   let title: LocalizedStringKey
   let initialName: String
   let initialIcon: NotisProfileIcon
-  let onSave: (String, NotisProfileIcon) -> Void
+  var isNew = false
+  var initialAllowMode = FeatureFlags.allowList
+  var initialBlockWebsites = false
+  let onSave: (String, NotisProfileIcon, Bool, Bool) -> Void
 
   @State private var name = ""
   @State private var icon: NotisProfileIcon = .apps
+  @State private var allowMode = FeatureFlags.allowList
+  @State private var blockWebsites = false
   @State private var isLoaded = false
 
   private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 6)
@@ -684,9 +703,27 @@ struct NotisProfileEditSheet: View {
           }
         }
 
-        Button("Opslaan") {
+        if FeatureFlags.profileMode {
+          Text("Apps")
+            .font(.satoshi(16, .bold))
+            .foregroundStyle(NotisBrand.ink)
+            .padding(.top, 4)
+          modeOption("Gekozen apps blokkeren", isSelected: !allowMode) { allowMode = false }
+          modeOption("Alleen gekozen apps toestaan", isSelected: allowMode) { allowMode = true }
+          Toggle(isOn: $blockWebsites) {
+            Text("Ook websites blokkeren")
+              .font(.satoshi(15, .bold))
+              .foregroundStyle(NotisBrand.ink)
+          }
+          .tint(NotisBrand.mandarinDark)
+          .padding(.horizontal, 16)
+          .padding(.vertical, 10)
+          .notisCard(radius: 14)
+        }
+
+        Button(isNew && FeatureFlags.profileMode ? "Kies apps" : "Opslaan") {
           let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-          onSave(trimmed.isEmpty ? initialName : String(trimmed.prefix(100)), icon)
+          onSave(trimmed.isEmpty ? initialName : String(trimmed.prefix(100)), icon, allowMode, blockWebsites)
         }
         .buttonStyle(NotisPrimaryButtonStyle())
         .padding(.top, 8)
@@ -698,8 +735,41 @@ struct NotisProfileEditSheet: View {
       guard !isLoaded else { return }
       name = initialName
       icon = initialIcon
+      allowMode = initialAllowMode
+      blockWebsites = initialBlockWebsites
       isLoaded = true
     }
+  }
+
+  /// A radio row: block or allow the chosen apps.
+  private func modeOption(_ label: LocalizedStringKey, isSelected: Bool, onTap: @escaping () -> Void) -> some View {
+    Button(action: onTap) {
+      HStack(spacing: 12) {
+        Text(label)
+          .font(.satoshi(15, .bold))
+          .foregroundStyle(NotisBrand.ink)
+        Spacer(minLength: 0)
+        ZStack {
+          Circle()
+            .strokeBorder(isSelected ? NotisBrand.mandarinDark : NotisBrand.inkSoft.opacity(0.3), lineWidth: 2)
+            .background(Circle().fill(isSelected ? NotisBrand.mandarinDark : .clear))
+          if isSelected {
+            Image(systemName: "checkmark")
+              .font(.system(size: 11, weight: .bold))
+              .foregroundStyle(.white)
+          }
+        }
+        .frame(width: 22, height: 22)
+      }
+      .padding(.horizontal, 16)
+      .padding(.vertical, 14)
+      .notisCard(radius: 14)
+      .overlay(
+        RoundedRectangle(cornerRadius: 14)
+          .strokeBorder(isSelected ? NotisBrand.mandarinDark : .clear, lineWidth: 2)
+      )
+    }
+    .buttonStyle(.plain)
   }
 }
 
